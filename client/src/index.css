@@ -8,42 +8,80 @@
   --font-display: 'Cinzel', serif;
   --font-body: 'Crimson Text', serif;
 
-  /* Fantasy Palette - Dark Mode Base */
-  --background: 240 10% 4%;      /* Deep void dark */
-  --foreground: 40 20% 90%;      /* Old paper white */
-  
-  --card: 240 10% 7%;            /* Slightly lighter void */
-  --card-foreground: 40 20% 90%;
-  
-  --popover: 240 10% 7%;
-  --popover-foreground: 40 20% 90%;
-  
-  --primary: 45 40% 50%;         /* Dull Gold */
-  --primary-foreground: 240 10% 4%;
-  
-  --secondary: 0 0% 15%;         /* Iron Gray */
-  --secondary-foreground: 40 20% 90%;
-  
-  --muted: 240 5% 15%;
-  --muted-foreground: 240 5% 60%;
-  
-  --accent: 15 50% 30%;          /* Leather Red/Brown */
+  --background: 220 15% 8%;
+  --foreground: 40 20% 88%;
+
+  --card: 220 14% 11%;
+  --card-foreground: 40 20% 88%;
+  --card-border: 45 20% 18%;
+
+  --popover: 220 14% 11%;
+  --popover-foreground: 40 20% 88%;
+  --popover-border: 45 20% 18%;
+
+  --primary: 45 50% 48%;
+  --primary-foreground: 220 15% 8%;
+
+  --secondary: 220 10% 16%;
+  --secondary-foreground: 40 20% 85%;
+
+  --muted: 220 10% 16%;
+  --muted-foreground: 220 10% 55%;
+
+  --accent: 15 40% 28%;
   --accent-foreground: 40 20% 90%;
-  
-  --destructive: 0 60% 30%;      /* Blood Red */
+
+  --destructive: 0 55% 35%;
   --destructive-foreground: 0 0% 100%;
 
-  --border: 45 20% 20%;          /* Faint Gold Border */
-  --input: 240 5% 10%;
-  --ring: 45 40% 50%;
-  
-  --radius: 0.5rem;
+  --border: 45 15% 18%;
+  --input: 220 12% 14%;
+  --ring: 45 50% 48%;
 
-  /* RPG Specific Colors */
-  --health: 0 70% 40%;
-  --mana: 210 70% 40%;
-  --stamina: 120 40% 30%;
-  --gold: 45 80% 50%;
+  --sidebar: 220 15% 7%;
+  --sidebar-foreground: 40 20% 88%;
+  --sidebar-border: 45 15% 15%;
+  --sidebar-primary: 45 50% 48%;
+  --sidebar-primary-foreground: 220 15% 8%;
+  --sidebar-accent: 220 10% 14%;
+  --sidebar-accent-foreground: 40 20% 88%;
+  --sidebar-ring: 45 50% 48%;
+
+  --chart-1: 45 50% 48%;
+  --chart-2: 0 55% 40%;
+  --chart-3: 210 55% 40%;
+  --chart-4: 120 35% 35%;
+  --chart-5: 280 40% 40%;
+
+  --radius: 0.375rem;
+
+  --button-outline: rgba(255,255,255, .08);
+  --badge-outline: rgba(255,255,255, .05);
+  --opaque-button-border-intensity: 9;
+  --elevate-1: rgba(255,255,255, .03);
+  --elevate-2: rgba(255,255,255, .07);
+
+  --sidebar-primary-border: hsl(var(--sidebar-primary));
+  --sidebar-accent-border: hsl(var(--sidebar-accent));
+  --primary-border: hsl(var(--primary));
+  --secondary-border: hsl(var(--secondary));
+  --muted-border: hsl(var(--muted));
+  --accent-border: hsl(var(--accent));
+  --destructive-border: hsl(var(--destructive));
+
+  --shadow-2xs: 0px 2px 0px 0px transparent;
+  --shadow-xs: 0px 2px 0px 0px transparent;
+  --shadow-sm: 0px 2px 0px 0px transparent, 0px 1px 2px -1px transparent;
+  --shadow: 0px 2px 0px 0px transparent, 0px 1px 2px -1px transparent;
+  --shadow-md: 0px 2px 0px 0px transparent, 0px 2px 4px -1px transparent;
+  --shadow-lg: 0px 2px 0px 0px transparent, 0px 4px 6px -1px transparent;
+  --shadow-xl: 0px 2px 0px 0px transparent, 0px 8px 10px -1px transparent;
+  --shadow-2xl: 0px 2px 0px 0px transparent;
+  --tracking-normal: 0em;
+  --spacing: 0.25rem;
+  --font-sans: 'Crimson Text', serif;
+  --font-serif: 'Cinzel', serif;
+  --font-mono: 'JetBrains Mono', monospace;
 }
 
 @layer base {
@@ -51,43 +89,71 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground antialiased selection:bg-primary/20;
+    @apply bg-background text-foreground antialiased;
     font-family: var(--font-body);
-    background-image: 
-      radial-gradient(circle at 50% 0%, hsl(var(--primary) / 0.05) 0%, transparent 50%),
-      url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
   }
-  
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
-    @apply font-bold tracking-wide text-primary/90;
-    text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    @apply font-semibold tracking-wide;
   }
 }
 
-@layer components {
-  .fantasy-card {
-    @apply bg-card border border-border/40 rounded-xl shadow-lg relative overflow-hidden transition-all duration-300;
-    background-image: linear-gradient(to bottom right, hsl(var(--card)), hsl(var(--background)));
+@layer utilities {
+  input[type="search"]::-webkit-search-cancel-button {
+    @apply hidden;
   }
-  
-  .fantasy-card::before {
-    content: '';
-    @apply absolute inset-0 opacity-10 pointer-events-none;
-    background-image: url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%239C92AC' fill-opacity='0.2' fill-rule='evenodd'%3E%3Ccircle cx='3' cy='3' r='3'/%3E%3Ccircle cx='13' cy='13' r='3'/%3E%3C/g%3E%3C/svg%3E");
+  [contenteditable][data-placeholder]:empty::before {
+    content: attr(data-placeholder);
+    color: hsl(var(--muted-foreground));
+    pointer-events: none;
   }
-
-  .fantasy-input {
-    @apply bg-black/20 border-border/30 focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition-all font-body text-lg rounded-md;
+  .no-default-hover-elevate {}
+  .no-default-active-elevate {}
+  .toggle-elevate::before,
+  .toggle-elevate-2::before {
+    content: "";
+    pointer-events: none;
+    position: absolute;
+    inset: 0px;
+    border-radius: inherit;
+    z-index: -1;
   }
-  
-  .fantasy-button {
-    @apply font-display tracking-widest uppercase font-semibold transition-all duration-300 active:scale-95;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  .toggle-elevate.toggle-elevated::before {
+    background-color: var(--elevate-2);
   }
-
-  .parchment-texture {
-    background-color: #e3dcd2;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.4'/%3E%3C/svg%3E");
+  .border.toggle-elevate::before {
+    inset: -1px;
+  }
+  .hover-elevate:not(.no-default-hover-elevate),
+  .active-elevate:not(.no-default-active-elevate),
+  .hover-elevate-2:not(.no-default-hover-elevate),
+  .active-elevate-2:not(.no-default-active-elevate) {
+    position: relative;
+    z-index: 0;
+  }
+  .hover-elevate:not(.no-default-hover-elevate)::after,
+  .active-elevate:not(.no-default-active-elevate)::after,
+  .hover-elevate-2:not(.no-default-hover-elevate)::after,
+  .active-elevate-2:not(.no-default-active-elevate)::after {
+    content: "";
+    pointer-events: none;
+    position: absolute;
+    inset: 0px;
+    border-radius: inherit;
+    z-index: 999;
+  }
+  .hover-elevate:hover:not(.no-default-hover-elevate)::after,
+  .active-elevate:active:not(.no-default-active-elevate)::after {
+    background-color: var(--elevate-1);
+  }
+  .hover-elevate-2:hover:not(.no-default-hover-elevate)::after,
+  .active-elevate-2:active:not(.no-default-active-elevate)::after {
+    background-color: var(--elevate-2);
+  }
+  .border.hover-elevate:not(.no-hover-interaction-elevate)::after,
+  .border.active-elevate:not(.no-active-interaction-elevate)::after,
+  .border.hover-elevate-2:not(.no-hover-interaction-elevate)::after,
+  .border.active-elevate-2:not(.no-active-interaction-elevate)::after {
+    inset: -1px;
   }
 }

@@ -1,84 +1,126 @@
-import { useCharacters } from "@/hooks/use-characters";
+import { useCharacters, useCreateCharacter, useDeleteCharacter } from "@/hooks/use-characters";
 import { Link } from "wouter";
-import { CreateCharDialog } from "@/components/CreateCharDialog";
-import { DiceRoller } from "@/components/DiceRoller";
-import { Scroll, Skull, User } from "lucide-react";
-import { motion } from "framer-motion";
+import { Scroll, Plus, Trash2, Shield, Swords } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { STAT_LABELS, getWoundscaleThreshold } from "@/lib/formulas";
+import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export default function Home() {
   const { data: characters, isLoading } = useCharacters();
+  const createMut = useCreateCharacter();
+  const deleteMut = useDeleteCharacter();
+  const [newName, setNewName] = useState("");
+  const [newRace, setNewRace] = useState("");
+  const [open, setOpen] = useState(false);
+
+  const handleCreate = () => {
+    if (!newName.trim()) return;
+    createMut.mutate({ name: newName.trim(), race: newRace.trim() }, {
+      onSuccess: () => { setNewName(""); setNewRace(""); setOpen(false); }
+    });
+  };
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center space-y-4 animate-pulse">
-          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="font-display text-xl text-primary/60">Consulting the archives...</p>
+          <div className="w-12 h-12 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-muted-foreground italic" style={{ fontFamily: "var(--font-display)" }}>Consulting the archives...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background p-6 md:p-12 pb-24">
-      <div className="max-w-7xl mx-auto space-y-12">
-        <header className="flex flex-col md:flex-row justify-between items-center gap-6 border-b border-border/30 pb-8">
-          <div className="space-y-2 text-center md:text-left">
-            <h1 className="text-4xl md:text-6xl text-primary">Eldgrove Chronicles</h1>
-            <p className="font-body text-xl text-muted-foreground italic">"Heroes get remembered, but legends never die."</p>
+    <div className="min-h-screen p-4 md:p-8">
+      <div className="max-w-6xl mx-auto space-y-8">
+        <header className="flex flex-col md:flex-row justify-between items-center gap-4 border-b border-border/40 pb-6">
+          <div className="space-y-1 text-center md:text-left">
+            <h1 className="text-3xl md:text-5xl text-primary" style={{ fontFamily: "var(--font-display)" }}>
+              Eldgrove Chronicles
+            </h1>
+            <p className="text-muted-foreground italic text-lg">"Heroes get remembered, but legends never die."</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Link href="/compendium">
+              <Button variant="outline" data-testid="link-compendium">
+                <Scroll className="w-4 h-4 mr-2" /> Compendium
+              </Button>
+            </Link>
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTrigger asChild>
+                <Button data-testid="button-create-character"><Plus className="w-4 h-4 mr-2" /> New Character</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle style={{ fontFamily: "var(--font-display)" }}>Create New Character</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 pt-2">
+                  <div className="space-y-2">
+                    <Label>Name</Label>
+                    <Input data-testid="input-char-name" value={newName} onChange={e => setNewName(e.target.value)} placeholder="Enter character name" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Race</Label>
+                    <Input data-testid="input-char-race" value={newRace} onChange={e => setNewRace(e.target.value)} placeholder="Human, Elf, Orc..." />
+                  </div>
+                  <Button data-testid="button-submit-create" className="w-full" onClick={handleCreate} disabled={createMut.isPending}>
+                    {createMut.isPending ? "Creating..." : "Create Character"}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
         </header>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {characters?.map((char) => (
-            <Link key={char.id} href={`/character/${char.id}`} className="group cursor-pointer">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                whileHover={{ y: -5, scale: 1.02 }}
-                className="fantasy-card h-full p-6 flex flex-col gap-4 group-hover:border-primary/50"
-              >
-                <div className="flex justify-between items-start">
-                  <div className="h-12 w-12 rounded-lg bg-black/40 border border-white/5 flex items-center justify-center text-primary/50">
-                    {char.isNpc ? <Skull className="w-6 h-6" /> : <User className="w-6 h-6" />}
+            <Card key={char.id} className="relative group p-5 hover-elevate" data-testid={`card-character-${char.id}`}>
+              <Link href={`/character/${char.id}`} className="block space-y-3">
+                <div className="flex justify-between items-start gap-2">
+                  <div>
+                    <h3 className="text-xl text-primary" style={{ fontFamily: "var(--font-display)" }}>{char.name}</h3>
+                    <p className="text-sm text-muted-foreground italic">{char.race} {char.archetype}</p>
                   </div>
-                  <span className="font-mono text-xs text-muted-foreground border border-border/30 px-2 py-1 rounded">
+                  <span className="text-xs font-mono bg-secondary px-2 py-1 rounded text-secondary-foreground">
                     LVL {char.level}
                   </span>
                 </div>
-                
-                <div className="space-y-1">
-                  <h3 className="text-2xl font-display text-foreground group-hover:text-primary transition-colors">
-                    {char.name}
-                  </h3>
-                  <p className="text-muted-foreground font-body italic">
-                    {char.race} {char.class}
-                  </p>
+                <div className="flex flex-wrap gap-2 text-xs font-mono">
+                  {Object.entries(STAT_LABELS).map(([key, label]) => (
+                    <span key={key} className="bg-background px-2 py-0.5 rounded border border-border/30">
+                      {label}: {(char as any)[key] ?? 1}
+                    </span>
+                  ))}
                 </div>
-
-                <div className="mt-auto pt-4 border-t border-border/10 flex justify-between text-sm text-muted-foreground/60">
-                  <span className="flex items-center gap-1">
-                    <Scroll className="w-3 h-3" /> View Sheet
-                  </span>
+                <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                  <span className="flex items-center gap-1"><Shield className="w-3 h-3" /> Prot: {char.armorProtection}</span>
+                  <span className="flex items-center gap-1"><Swords className="w-3 h-3" /> {getWoundscaleThreshold(char.woundsCurrent ?? 0)}</span>
                 </div>
-              </motion.div>
-            </Link>
+              </Link>
+              <Button
+                size="icon" variant="ghost"
+                className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                data-testid={`button-delete-char-${char.id}`}
+                onClick={(e) => { e.preventDefault(); deleteMut.mutate(char.id); }}
+              >
+                <Trash2 className="w-4 h-4 text-destructive" />
+              </Button>
+            </Card>
           ))}
-          
-          {characters?.length === 0 && (
-            <div className="col-span-full py-20 text-center border-2 border-dashed border-border/20 rounded-2xl">
-              <p className="font-display text-2xl text-muted-foreground/50">No chronicles found.</p>
-              <p className="text-muted-foreground/30 mt-2">Create a new character to begin.</p>
-            </div>
-          )}
         </div>
-      </div>
 
-      <div className="fixed bottom-6 right-6 z-40 flex items-center gap-4">
-        <CreateCharDialog />
+        {characters?.length === 0 && (
+          <div className="text-center py-16 border border-dashed border-border/30 rounded-md">
+            <p className="text-lg text-muted-foreground" style={{ fontFamily: "var(--font-display)" }}>No chronicles found.</p>
+            <p className="text-sm text-muted-foreground/60 mt-1">Create a new character to begin.</p>
+          </div>
+        )}
       </div>
-
-      <DiceRoller />
     </div>
   );
 }

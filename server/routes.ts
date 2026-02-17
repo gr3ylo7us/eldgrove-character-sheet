@@ -1,40 +1,36 @@
-
 import type { Express } from "express";
-import { createServer, type Server } from "http";
+import type { Server } from "http";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
-import { characters } from "@shared/schema";
+import { seedDatabase } from "./seed";
 
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  
-  app.get(api.characters.list.path, async (req, res) => {
-    const chars = await storage.getCharacters();
-    res.json(chars);
+
+  await seedDatabase();
+
+  app.get(api.characters.list.path, async (_req, res) => {
+    res.json(await storage.getCharacters());
   });
 
   app.get(api.characters.get.path, async (req, res) => {
     const id = parseInt(req.params.id);
     if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
-    
     const char = await storage.getCharacter(id);
     if (!char) return res.status(404).json({ message: "Character not found" });
-    
     res.json(char);
   });
 
   app.post(api.characters.create.path, async (req, res) => {
     try {
-      const charData = api.characters.create.input.parse(req.body);
-      const char = await storage.createCharacter(charData);
+      const data = api.characters.create.input.parse(req.body);
+      const char = await storage.createCharacter(data);
       res.status(201).json(char);
     } catch (e) {
-      if (e instanceof z.ZodError) {
-        return res.status(400).json({ message: e.errors });
-      }
+      if (e instanceof z.ZodError) return res.status(400).json({ message: e.errors[0].message });
       throw e;
     }
   });
@@ -42,16 +38,13 @@ export async function registerRoutes(
   app.put(api.characters.update.path, async (req, res) => {
     const id = parseInt(req.params.id);
     if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
-
     try {
-      const charData = api.characters.update.input.parse(req.body);
-      const updated = await storage.updateCharacter(id, charData);
+      const data = api.characters.update.input.parse(req.body);
+      const updated = await storage.updateCharacter(id, data);
       if (!updated) return res.status(404).json({ message: "Character not found" });
       res.json(updated);
     } catch (e) {
-      if (e instanceof z.ZodError) {
-        return res.status(400).json({ message: e.errors });
-      }
+      if (e instanceof z.ZodError) return res.status(400).json({ message: e.errors[0].message });
       throw e;
     }
   });
@@ -59,52 +52,19 @@ export async function registerRoutes(
   app.delete(api.characters.delete.path, async (req, res) => {
     const id = parseInt(req.params.id);
     if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
-    
     await storage.deleteCharacter(id);
     res.status(204).send();
   });
 
+  app.get(api.data.weapons.path, async (_req, res) => res.json(await storage.getWeapons()));
+  app.get(api.data.armor.path, async (_req, res) => res.json(await storage.getArmor()));
+  app.get(api.data.items.path, async (_req, res) => res.json(await storage.getItems()));
+  app.get(api.data.skills.path, async (_req, res) => res.json(await storage.getSkills()));
+  app.get(api.data.archetypes.path, async (_req, res) => res.json(await storage.getArchetypes()));
+  app.get(api.data.feats.path, async (_req, res) => res.json(await storage.getFeats()));
+  app.get(api.data.maneuvers.path, async (_req, res) => res.json(await storage.getManeuvers()));
+  app.get(api.data.languages.path, async (_req, res) => res.json(await storage.getLanguages()));
+  app.get(api.data.leveling.path, async (_req, res) => res.json(await storage.getLeveling()));
+
   return httpServer;
 }
-
-// Seed function to populate DB with example characters
-async function seedDatabase() {
-  const existing = await storage.getCharacters();
-  if (existing.length === 0) {
-    const defaultStats = {
-      strength: 16,
-      dexterity: 14,
-      constitution: 15,
-      intelligence: 10,
-      wisdom: 12,
-      charisma: 8
-    };
-    
-    await storage.createCharacter({
-      name: "Grommash",
-      race: "Orc",
-      class: "Barbarian",
-      level: 3,
-      stats: defaultStats,
-      notes: "A fierce warrior looking for his clan.",
-      skills: ["Athletics", "Intimidation"],
-      equipment: ["Greataxe", "Potion of Healing"],
-      abilities: ["Rage", "Reckless Attack"]
-    });
-    
-    await storage.createCharacter({
-      name: "Elara",
-      race: "Elf",
-      class: "Wizard",
-      level: 3,
-      stats: { ...defaultStats, strength: 8, intelligence: 18 },
-      notes: "Studying ancient runes.",
-      skills: ["Arcana", "History"],
-      equipment: ["Spellbook", "Wand"],
-      abilities: ["Fireball", "Mage Armor"]
-    });
-  }
-}
-
-// Invoke seed (fire and forget)
-seedDatabase().catch(console.error);

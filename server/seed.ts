@@ -27,10 +27,36 @@ function parseCSVLine(line: string): string[] {
   return result;
 }
 
+function splitCSVRows(content: string): string[] {
+  const rows: string[] = [];
+  let current = "";
+  let inQuotes = false;
+  for (let i = 0; i < content.length; i++) {
+    const ch = content[i];
+    if (ch === '"') {
+      if (inQuotes && i + 1 < content.length && content[i + 1] === '"') {
+        current += '""';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      current += ch;
+    } else if ((ch === '\n' || ch === '\r') && !inQuotes) {
+      if (ch === '\r' && i + 1 < content.length && content[i + 1] === '\n') i++;
+      if (current.trim()) rows.push(current);
+      current = "";
+    } else {
+      current += ch;
+    }
+  }
+  if (current.trim()) rows.push(current);
+  return rows;
+}
+
 function readCSV(filename: string): string[][] {
   const filePath = path.join(process.cwd(), "data", "csv", filename);
   const content = fs.readFileSync(filePath, "utf-8");
-  return content.split("\n").map(parseCSVLine);
+  return splitCSVRows(content).map(parseCSVLine);
 }
 
 function cleanName(n: string): string {
@@ -43,7 +69,48 @@ function safeInt(v: string | undefined): number {
   return isNaN(n) ? 0 : n;
 }
 
+function cleanFeature(s: string | undefined): string {
+  if (!s) return "";
+  return s.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
+}
+
+async function seedArchetypes() {
+  const archRows = readCSV("ELDGROVE [CHARSHEET_BETA_v1.0] - ARCHETYPES.csv");
+  const archData: any[] = [];
+  for (let i = 1; i < archRows.length; i++) {
+    const r = archRows[i];
+    if (r[0] && r[0].trim() !== "" && r[0].trim() !== "Initiate Archetype" && r[0].trim() !== ",") {
+      const name = r[0].replace(/,/g, "").trim();
+      if (name.length > 0 && name.length < 40) {
+        const featureList = [cleanFeature(r[1]), cleanFeature(r[2])].filter(f => f.length > 0);
+        archData.push({ name, tier: "Initiate", features: featureList });
+      }
+    }
+    if (r[3] && r[3].trim() !== "" && r[3].trim() !== "Acolyte Archetype" && r[3].trim() !== ",") {
+      const name = r[3].replace(/,/g, "").trim();
+      if (name.length > 0 && name.length < 40) {
+        const featureList = [cleanFeature(r[4]), cleanFeature(r[5]), cleanFeature(r[6])].filter(f => f.length > 0);
+        archData.push({ name, tier: "Acolyte", features: featureList });
+      }
+    }
+    if (r[7] && r[7].trim() !== "" && r[7].trim() !== "Scholar Archetype" && r[7].trim() !== ",") {
+      const name = r[7].replace(/,/g, "").trim();
+      if (name.length > 0 && name.length < 40) {
+        const featureList = [cleanFeature(r[8]), cleanFeature(r[9]), cleanFeature(r[10]), cleanFeature(r[11])].filter(f => f.length > 0);
+        archData.push({ name, tier: "Scholar", features: featureList });
+      }
+    }
+  }
+  if (archData.length > 0) await db.insert(archetypes).values(archData);
+  console.log(`Re-seeded ${archData.length} archetypes`);
+}
+
 export async function seedDatabase() {
+  const existingArchetypes = await db.select().from(archetypes);
+  if (existingArchetypes.length === 0) {
+    await seedArchetypes();
+  }
+
   const existingWeapons = await db.select().from(weapons);
   if (existingWeapons.length > 0) {
     console.log("Database already seeded, skipping.");
@@ -201,35 +268,7 @@ export async function seedDatabase() {
   if (langData.length > 0) await db.insert(languages).values(langData);
   console.log(`Seeded ${langData.length} languages`);
 
-  // ARCHETYPES
-  const archRows = readCSV("ELDGROVE [CHARSHEET_BETA_v1.0] - ARCHETYPES.csv");
-  const archData: any[] = [];
-  for (let i = 1; i < archRows.length; i++) {
-    const r = archRows[i];
-    if (r[0] && r[0].trim() !== "" && r[0].trim() !== "Initiate Archetype") {
-      const featureList: string[] = [];
-      if (r[1]) featureList.push(r[1].trim());
-      if (r[2]) featureList.push(r[2].trim());
-      archData.push({ name: r[0].trim(), tier: "Initiate", features: featureList });
-    }
-    if (r[3] && r[3].trim() !== "" && r[3].trim() !== "Acolyte Archetype") {
-      const featureList: string[] = [];
-      if (r[4]) featureList.push(r[4].trim());
-      if (r[5]) featureList.push(r[5].trim());
-      if (r[6]) featureList.push(r[6].trim());
-      archData.push({ name: r[3].trim(), tier: "Acolyte", features: featureList });
-    }
-    if (r[7] && r[7].trim() !== "" && r[7].trim() !== "Scholar Archetype") {
-      const featureList: string[] = [];
-      if (r[8]) featureList.push(r[8].trim());
-      if (r[9]) featureList.push(r[9].trim());
-      if (r[10]) featureList.push(r[10].trim());
-      if (r[11]) featureList.push(r[11].trim());
-      archData.push({ name: r[7].trim(), tier: "Scholar", features: featureList });
-    }
-  }
-  if (archData.length > 0) await db.insert(archetypes).values(archData);
-  console.log(`Seeded ${archData.length} archetypes`);
+  // ARCHETYPES (seeded separately via seedArchetypes)
 
   // LEVELING TABLE
   const levelRows = readCSV("ELDGROVE [CHARSHEET_BETA_v1.0] - LEVELING TABLE.csv");

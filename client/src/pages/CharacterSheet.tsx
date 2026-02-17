@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, Save, Swords, BookOpen, Shield, Scroll, Sparkles, Heart, Zap, Trash2 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
-import { useWeapons, useArmor, useSkills, useFeats, useManeuvers, useLanguages } from "@/hooks/use-game-data";
+import { useWeapons, useArmor, useSkills, useFeats, useManeuvers, useLanguages, useArchetypes } from "@/hooks/use-game-data";
 import { STAT_LABELS, getReflexes, getSeek, getNerve, getHealth, getWill, getAptitude, getMove, getEvade, getSkulk, getSeeleMax, getWeaponAttack, getWoundscaleThreshold } from "@/lib/formulas";
 import type { Character } from "@shared/schema";
 
@@ -51,6 +51,7 @@ export default function CharacterSheetPage() {
   const { data: allFeats } = useFeats();
   const { data: allManeuvers } = useManeuvers();
   const { data: allLanguages } = useLanguages();
+  const { data: allArchetypes } = useArchetypes();
   const [, navigate] = useLocation();
 
   const [form, setForm] = useState<Partial<Character>>({});
@@ -85,6 +86,7 @@ export default function CharacterSheetPage() {
   const knownManeuvers = (c.knownManeuvers as string[]) || [];
   const knownLangs = (c.knownLanguages as string[]) || [];
   const inventory = (c.inventory as any[]) || [];
+  const archetypeFeatures = (c.archetypeFeatures as string[]) || [];
 
   return (
     <div className="min-h-screen p-3 md:p-6">
@@ -104,7 +106,22 @@ export default function CharacterSheetPage() {
               />
               <div className="flex items-center gap-2 mt-1">
                 <Input className="text-sm bg-transparent border-none p-0 h-auto w-24 text-muted-foreground" value={form.race || ""} onChange={e => update("race", e.target.value)} placeholder="Race" data-testid="input-race" />
-                <Input className="text-sm bg-transparent border-none p-0 h-auto w-32 text-muted-foreground" value={form.archetype || ""} onChange={e => update("archetype", e.target.value)} placeholder="Archetype" data-testid="input-archetype" />
+                <Select value={form.archetype || ""} onValueChange={v => {
+                  update("archetype", v);
+                  const arch = allArchetypes?.find(a => a.name === v);
+                  if (arch) {
+                    update("archetypeFeatures", arch.features || []);
+                  }
+                }}>
+                  <SelectTrigger className="text-sm h-auto py-0 w-36 border-none bg-transparent text-muted-foreground" data-testid="select-archetype">
+                    <SelectValue placeholder="Archetype" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {allArchetypes?.map(a => (
+                      <SelectItem key={a.id} value={a.name}>{a.name} ({a.tier})</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>
@@ -284,6 +301,25 @@ export default function CharacterSheetPage() {
           </TabsContent>
 
           <TabsContent value="abilities" className="space-y-4">
+            {(c.archetype || archetypeFeatures.length > 0) && (
+              <Card className="p-5">
+                <h3 className="text-sm text-muted-foreground uppercase tracking-wider mb-3" style={{ fontFamily: "var(--font-display)" }}>
+                  Archetype: {c.archetype || "None"}
+                </h3>
+                {archetypeFeatures.length > 0 ? (
+                  <div className="space-y-2">
+                    {archetypeFeatures.map((f: string, i: number) => (
+                      <div key={i} className="p-3 bg-secondary/20 rounded border border-border/10">
+                        <p className="text-sm">{f}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground italic">Select an archetype to see its features.</p>
+                )}
+              </Card>
+            )}
+
             <Card className="p-5">
               <div className="flex items-center justify-between mb-3 gap-2">
                 <h3 className="text-sm text-muted-foreground uppercase tracking-wider" style={{ fontFamily: "var(--font-display)" }}>Feats</h3>

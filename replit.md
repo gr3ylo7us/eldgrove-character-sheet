@@ -4,7 +4,7 @@
 Web-based character sheet application for the "Eldgrove" TTRPG system. Displays character information in two main formats:
 - **Character Sheet**: Comprehensive view for editing all character details (stats, combat, skills, abilities, inventory)
 - **Datacards**: Streamlined Combat and Roleplay views for quick reference during gameplay
-- **Compendium**: Reference library for all game data (weapons, armor, items, skills, feats, maneuvers, languages, leveling)
+- **Compendium**: Reference library for all game data (weapons, armor, items, skills, feats, maneuvers, languages, archetypes, leveling) with clickable detail dialogs
 
 ## Architecture
 - **Frontend**: React + TypeScript + Vite, TailwindCSS, shadcn/ui components
@@ -54,3 +54,8 @@ data/csv/     - Source CSV files for game reference data
 - Feb 2026: Complete rebuild with full reference data system
 - Seeded from 10 CSV files: weapons, armor, items, skills, feats, maneuvers, archetypes, languages, leveling
 - Sample character "Ashren Voss" pre-loaded
+- Feb 2026: Added Archetypes support
+  - Archetypes tab in Compendium showing 25 archetypes across 3 tiers (Initiate, Acolyte, Scholar)
+  - Archetype selection dropdown on Character Sheet with features display in Abilities tab
+  - Clickable detail dialogs for all Compendium items (weapons, armor, items, skills, feats, maneuvers, languages, archetypes, leveling)
+  - Fixed CSV parser to handle multi-line quoted fields

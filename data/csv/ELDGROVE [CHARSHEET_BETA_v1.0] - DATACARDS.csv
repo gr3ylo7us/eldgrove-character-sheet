@@ -1,0 +1,112 @@
+DATACARD,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,
+,NAME,POW: 1,FIN: 6,VIT: 2,ACU: 4,DIP: 1,INT: 2,SEELE,,MOVE,EVADE,SKULK,WOUNDSCALE,,,,,,COMBAT ACTIONS,,,
+,,REF: 9,,,SEEK: 7,,,,/ 9,"6""",5/8+,8/11+,5,,,,,,ACTION,DESCRIPTION,USES PER TURN,AP COST
+,WEAPON,,,,ATTACK,DAMAGE,EFFECTS,,,,,,,,,,,,MOVE,Advance your character a distance in inches equal to your MOVE,1,1
+,⚔️Steel Longsword,,,,6,3/5,"Grappling 2, Balanced, Silent",,,,,,SKILLS,CATEGORY,TIER,,,,ATTACK,"Roll d20s equal to your weapon's ATTACK, count successes equal to numbers over HIT",1,1
+,🏹Flintlock Rifle,,,,5,3/4,"Blackpowder, Anti-material 3",,,,,,Melee Mastery ,,3,,,,DEFEND,Decrease the threshold of success on your evasion rolls by an amount proportional to the amount of SEELE you expend.,,1
+,🏹Flintlock Pistol,,,,4,3/4,"Blackpowder, Anti-material 3",,,,,,Ranged Mastery,,1,,,,MAGICK,"Pay COST in Seele, roll CAST dice and determine the effects based on chosen impetus",,1
+,⚔️Steel Tomahawk,,,,4,3/5,"Throwable, Off-hand",,,,,,Arcane Mastery,,1,,,,MANEUVER,"Pay COST in Seele, roll ATTACK dice and count successes equal to numbers higher than HIT",,1
+,MAGICK,,,,COST,CAST,DAMAGE,EFFECTS,,,,,Skullduggery ,INTUITION,,,,,SKULK,"If obscured or undetected, roll SKULK. Successes are number of LOS immunities/noises you can ignore before being detected. Enemy SEEK can shred this value",,1
+,Vietar,,,,3,4,2/4,"Balanced, Blast 1, Seek, Accurate 1",,,,,,,,,,,USE ITEM,"Roll usage dice of item, use item according to description",,1
+,Strela,,,,4,5,3/5,"Lethal 15+, Devastating 5, Brutal",,,,,,,,,,,SLIP,"When you next MOVE, ignore collision with units and enemy units you pass by or through cannot FIGHT you",1,1
+,Telos,,,,5,6,4/6,"Lethal 15+, Severe, Silent, Relentless",,,,,,,,,,,GRAPPLE,"Roll ATTACK against enemy ATTACK, no EVASION dice. If fail, enemy escapes. If success, enemy cannot move and you can move them with you at half MOVE",,1
+,Marak,,,,4,5,3/5,"Silent, Torrent 1, Accurate 1, Balanced",,,,,,,,,,,DASH,MOVE/2,1,1
+,MANEUVER,,,,COST,EFFECTS,,,,,,,,,,,,,DISENGAGE,MOVE/2 out of Melee range of an enemy,1,1
+,The Long Breath Doctrine:  Third Lung,,,,0,You hold your breath continuously until the next time you speak or take damage.,,,,,,,,,,,,,CHARGE,"MOVE + MOVE/2 if you can end within 1"" of an enemy",1,1
+,Evasive Maneuver,,,,Variable,"When you are targeted by an attack, gain 1D to your EVADE for every 3 SEELE you spend.",,,,,,,,,,,,,SHOVE,"Roll ATTACK against enemy ATTACK, no EVASION dice. If fail, nothing happens. If success, enemy is pushed away by POW and next MOVE/2",,
+,Riposte,,,,3,"Gain a bonus to your protection equal to half your highest Physique or Motorics skill. If the resulting strike would fail to damage through your Protection, you may make an immediate counterattack.",,,,,,,,,,,,,SEEK,"Roll SEEK, successes shred SKULK or time to find something",,1
+,Cleaving Blow,,,,1,Your next melee attack can hit multiple enemies within range.,,,,,,,,,,,,,HEAL,"Roll MEDICINE to heal others or VIT to heal yourself, curing Wounds on target within 1""",1,1
+,,,,, ,,,,,,,,,,,,,,ESCAPE,Roll ATTACK + EVADE/2 to attempt escaping a grapple or restraint,,1
+,,,,, ,,,,,,,,,,,,,,HELP,Add half of relevant roll to target,,1
+,,,,, ,,,,,,,,,,,,,,READY,Specify a trigger for another Action,,1
+,Evasive Maneuver,,,,Variable,"When you are targeted by an attack, gain 1D to your EVADE for every 3 SEELE you spend.",,,,,,,,,,,,,IMPROVISE,Anything not specified,,1
+,ARCHETYPE,,,,,,,,,FEATS,,,,,,,,,COUNTERSPELL,Dedicate an action toward counterspelling an enemy. You may only have one such action prepared unless... ,1,1
+,INITIATE,Mage  FEATURE 1, Magical Education: Learn two Languages.,,,,,,,, ,,,,,,,,,,,
+,,Rogue FEATURE 1,"Trickery: When adding additional dice to skill rolls, you may receive the full value of one supporting skill.
+",,,,,,,, ,,,,,,,,,,,
+,ACOLYTE,Oracle FEATURE 2,"Divine Ecstasy: You may use an action in a Combat Encounter to enter a state of divine ecstasy that lasts for one minute. In this state, you gain the following benefits: You cannot be DOWNED, you cannot be charmed/compelled/frightened, you add your Theology to all MIND rolls.",,,,,,,, ,,,,,,,,,,,
+,,Sorcerer FEATURE 3,Sorcerous Retribution: You may expend additional SEELE up to your current Woundscale damage when paying the COST of a spell to add your Woundscale damage as extra dice to your CAST.,,,,,,,, ,,,,,,,,ROLL,DESCRIPTION,LETHALITY,AP COST
+,,Wizard  FEATURE 1,Magical Experimentation: Learn an additional Language and either open the Arcane Mastery skill or gain an extra tier in Arcane Mastery.,,,,,,,, ,,,,,,,,1,,1,1
+,SCHOLAR,Paladin FEATURE 3,"Faith Healing: You may use an action to touch one living creature in order to: Heal damage equal to your Pain Tolerance, remove a diseased affliction, or remove a poisoned affliction.",,,,,,,, ,,,,,,,,2,,1,1
+,,Gunner FEATURE 3,"Trick Shot: When attacking, you may add dice to your target's EVADE roll in order to get a benefit upon a successful hit:
+
+1: Disarm target or shoot an object from their hand.
+2: Ricochet shot to hit a target behind cover.
+3: Your attacks also hit any enemies within your Line of Sight",,,,,,,CURIOS,,,,,,,,,3,,1,1
+,,Artificer FEATURE 3,"Store Spell: You can use an action to imbue an object with a spell, losing maximum SEELE equal to the COST of the spell until this spell is cast. Any creature holding the object can cast the stored spell using your Arcane Mastery as an action.",,,,,,,, ,,,,,,,,4,,2,1
+,,Witch FEATURE 3," Witch Fire: You may expend an action to become invisible and create a Will-O'-Wisp flame within your Presence for one minute. At the end of this feature, you teleport to an open space of your choosing adjacent to the Will-O'-Wisp flame. When you use this feature (and again each time you use an action to control this feature) you can move the flame up to 10 meters and attack a creature within one meter of it. This attack utilizes a Language of your choosing. ",,,,,,,, ,,SKULK,,,,,,5,,2,1
+,PROVOST, , ,,,,,,,, ,,CURRENT,MAX,,,,,,,,
+,, , ,,,,,,,, ,,,,,,,,6,,3,1
+,, , ,,,,,,,, ,,,,,,,,7,,3,1
+,, , ,,,,,,,, ,,VISIBLE,,,,,,8,,3,1
+,,,,,,,,,,,,,,,,,,,9,,3,1
+,,,,,,,,,,,,,,,,,,,10,,3,1
+,,,,,,,,,,,,,,,,,,,11,,4,1
+,,,,,,,,,,,,,,,,,,,12,,4,1
+,,,,,,,,,,,,,,,,,,,13,,4,
+,,,,,,,,,,,,,,,,,,,14,,4,1
+,,,,,,,,,,,,,,,,,,,15,,4,1
+,,,,,,,,,,,,,,,,,,,16,,5,1
+,,,,,,,,,,,,,,,,,,,17,,3,1
+,,,,,,,,,,,,,,,,,,,18,,3,1
+,,,,,,,,,,,,,,,,,,,19,,4,1
+,,,,,,,,,,,,,,,,,,,20,,4,1
+,,,,,,,,,,,,,,,,,,,21,,4,
+,,,,,,,,,,,,,,,,,,,22,,3,1
+,,,,,,,,,,,,,,,,,,,23,,3,1
+,,,,,,,,,,,,,,,,,,,24,,4,1
+,,,,,,,,,,,,,,,,,,,25,,4,1
+,,,,,,,,,,,,,,,,,,,26,,4,
+,,,,,,,,,,,,,,,,,,,27,,4,1
+,,,,,,,,,,,,,,,,,,,28,,3,1
+,,,,,,,,,,,,,,,,,,,29,,3,1
+,,,,,,,,,,,,,,,,,,,30,"Your character loses a limb, becomes comatose for a time equal to your injuries in days, or suffers a similar ailment.",4,1
+,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,
+ROLEPLAY DATACARD,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,
+,NAME,POW: 1,FIN: 6,VIT: 2,ACU: 4,DIP: 1,INT: 2,KARMA,,RESOURCE DICE,REPUTATION,SKULK,STRAIN,,,,,,,,,
+,,NRV: 9,REF: 9,HLT: ,SEEK: 7,WILL: 1,APT: ,,/ 0,0,0,#VALUE!,WEARY,FATIGUE,EXHAUSTED,,,,,,,
+,BODY OF ARGUMENT,WHAT I WANT,WHAT I'M HIDING,COMPROMISES,,ACTION,DESCRIPTION,,NORMAL,VS,SPECIAL,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,
+,Arcane Mastery,,,,,EXCHANGE 1,,,,,,,NOTES,,,,,,,,,
+,,,,,,, ,, , , ,,,,,,,,,,,
+,1,,,,,EXCHANGE 2,,,,,,,,,,,,,,,,
+,,,,,,, ,, , , ,,,,,,,,,,,
+,HEALTH,,,,,EXCHANGE 3,,,,,,,,,,,,,,,,
+,,,,,,, ,, , , ,,,,,,,,,,,
+,MAGICK,,,,COST,CAST,HIT,,DAMAGE,EFFECTS,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,
+,,,,,, , ,,,,,,,,,,,,,,,
+,,,,,, , ,,,,,,,,,,,,,,,
+,,,,,, , ,,,,,,,,,,,,,,,
+,,,,,, , ,,,,,,,,,,,,,,,
+,INVENTORY,,,,USAGE DICE,EFFECTS,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,
+,,,,, , ,,,,,,,,,,,,,,,,
+,,,,, , ,,,,,,,,,,,,,,,,
+,,,,, , ,,,,,,,,,,,,,,,,
+,,,,, , ,,,,,,,,,,,,,,,,
+,,,,, , ,,,,,,,,,,,,,,,,
+,,,,, , ,,,,,,,,,,,,,,,,
+,,,,, , ,,,,,,,,,,,,,,,,
+,,,,, , ,,,,,,,,,,,,,,,,
+,ROLEPLAY SKILLS,,,,PROFESSION FEATURES,,,,TRAINING,,,,DOWNTIME TRACKER,,,,,,,,,
+,,#REF!,,,,,,,LANGUAGE,,REQUIREMENT,PROGRESS,DAILY,WEEKLY,MONTHLY,,,,,,,
+,,,,,,,,,,, ,,,,,,,,,,,
+,,#REF!,,,,,,,FEAT,,REQUIREMENT,PROGRESS,,,,,,,,,,
+,,,,,,,,,,, ,,,,,,,,,,,
+,,#REF!,,,,,,,MANEUVER,,REQUIREMENT,PROGRESS,,,,,,,,,,
+,,,,,,,,,,, ,,,,,,,,,,,
+,,#REF!,,,,,,,SKILL,,REQUIREMENT,PROGRESS,,,,,,,,,,
+,,,,,,,,,,, ,,,,,,,,,,,
+,,#REF!,,,,,,,VISIBLE,,,,,,,,,,,,,
+,,,,,,,,,FALSE,FALSE,FALSE,FALSE,,,,,,,,,,
+,,#REF!,,,,,,,FALSE,FALSE,FALSE,FALSE,,,,,,,,,,
+,,,,,,,,,FALSE,FALSE,FALSE,FALSE,,,,,,,,,,

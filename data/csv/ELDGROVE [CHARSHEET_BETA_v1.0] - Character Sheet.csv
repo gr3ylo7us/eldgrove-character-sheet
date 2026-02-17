@@ -1,0 +1,85 @@
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,NAME,,,,,,,,LEVEL,PROGRESS,,,BONUSES,,,,ARCHETYPE TALENTS,,,,,,,,,,,,,,,ARMAMENTS,,,,,,,,
+,,,,,,,,,3,3,LEVEL UP!,,"+ ACOLYTE ARCHETYPE FEATURE
++ 1 MIND/BODY STAT POINTS
++1 SKILL OPENING",,,,INITIATE ARCHETYPES,FEATURE,,DESCRIPTION,,,,,,,,,,,,Weapon,Type,Damage,Mastery,Damage,Crit Damage,Attacks,Damage Type,Effects
+,,,,,,,,,,,,,,,,,Mage ,FEATURE 1,, Magical Education: Learn two Languages.,,,,,,,,,,,,⚔️Steel Longsword,Melee Weapon,3,Melee Mastery,3,5,1,"Piercing, Bludgeoning, Slashing","Grappling 2, Balanced, Silent"
+,,,,,,,,,,,,,,,,,Rogue,FEATURE 1,,"Trickery: When adding additional dice to skill rolls, you may receive the full value of one supporting skill.
+",,,,,,,,,,,,🏹Flintlock Rifle,Blackpowder Weapon,4,Ranged Mastery,3,4,0,Piercing,"Blackpowder, Anti-material 3"
+,,,,,,,,,,,,,,,,,ACOLYTE ARCHETYPES,FEATURE,,DESCRIPTION,,,,,,,,,,,,🏹Flintlock Pistol,Blackpowder Weapon,3,Ranged Mastery,3,4,0,Piercing,"Blackpowder, Anti-material 3"
+,,,,,,,,,RENOWN,KARMA,,EVASION,PROTECTION,,,,Oracle,FEATURE 2,,"Divine Ecstasy: You may use an action in a Combat Encounter to enter a state of divine ecstasy that lasts for one minute. In this state, you gain the following benefits: You cannot be DOWNED, you cannot be charmed/compelled/frightened, you add your Theology to all MIND rolls.",,,,,,,,,,,,⚔️Steel Tomahawk,Melee Weapon,1,Both,3,5,0,Slashing,"Throwable, Off-hand"
+,,,,,,,,,0,0,,5,3,,,,Sorcerer,FEATURE 3,,Sorcerous Retribution: You may expend additional SEELE up to your current Woundscale damage when paying the COST of a spell to add your Woundscale damage as extra dice to your CAST.,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,STATS,TIERS,,ATTRIBUTES,TIERS,,,,Wizard ,FEATURE 1,,Magical Experimentation: Learn an additional Language and either open the Arcane Mastery skill or gain an extra tier in Arcane Mastery.,,,,,,,,,,,,ARMOR,,,,,,,,
+,,,,,,,,,POWER,1,BODY,REFLEXES,9,,,,SCHOLAR ARCHETYPES,FEATURE,,DESCRIPTION,,,,,,,,,,,,Name,,Prot. Bonus,Eva. Bonus,Effects,,,,
+,,,,,,,,,FINESSE,6,,,,,,,Paladin,FEATURE 3,,"Faith Healing: You may use an action to touch one living creature in order to: Heal damage equal to your Pain Tolerance, remove a diseased affliction, or remove a poisoned affliction.",,,,,,,,,,,,Rusted Plate,,3,1,"When taking the DEFEND action, normal successes on your EVADE dice can be used to block critical successes on attacks.",,,,
+,,,,,,,,,VITALITY,2,,,,,,,Gunner,FEATURE 3,,"Trick Shot: When attacking, you may add dice to your target's EVADE roll in order to get a benefit upon a successful hit:
+
+1: Disarm target or shoot an object from their hand.
+2: Ricochet shot to hit a target behind cover.
+3: Your attacks also hit any enemies within your Line of Sight",,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,ACUMEN,4,MIND,SEEK,7,,,,Artificer,FEATURE 3,,"Store Spell: You can use an action to imbue an object with a spell, losing maximum SEELE equal to the COST of the spell until this spell is cast. Any creature holding the object can cast the stored spell using your Arcane Mastery as an action.",,,,,,,,,,,,FEATS AND MANEUVERS,,,,,,,,
+,,,,,,,,,DIPLOMACY,1,,,,,,,Witch,FEATURE 3,," Witch Fire: You may expend an action to become invisible and create a Will-O'-Wisp flame within your Presence for one minute. At the end of this feature, you teleport to an open space of your choosing adjacent to the Will-O'-Wisp flame. When you use this feature (and again each time you use an action to control this feature) you can move the flame up to 10 meters and attack a creature within one meter of it. This attack utilizes a Language of your choosing. ",,,,,,,,,,,,FEAT,,,,EFFECT,,,,
+,,,,,,,,,INTUITION,2,,,,,,,PROVOST ARCHETYPES,FEATURE,,DESCRIPTION,,,,,,,,,,,,Lucky,,,,"When you roll a check, you may reroll as many dice as you'd like in that roll. You may do this a number of times per session equal to your highest Spirit Stat.",,,,
+,,,,,,,,,TALENT,,SPIRIT,SEELE,9,,,,,,, ,,,,,,,,,,,,Offhand Fighting,,,,Your offhand weapon damage dice are added to the attack roll made with your mainhand weapon.,,,,
+,,,,,,,,,MOXIE,1,,,,,,,,,, ,,,,,,,,,,,,Battlemaster,,,,Your weapons gain the Disabling effect on a successful attack.,,,,
+,,,,,,,,,AUDACITY,1,,,,,,,,,, ,,,,,,,,,,,,,,,, ,,,,
+,,,,,,,,,,,,,,,,,,,, ,,,,,,,,,,,,Family Heirloom,,,,You possess an item of great value or power that symbolizes the once-great might of your family.,,,,
+,MASTERY,,,,,,,,SKILLS,,,,,,,,,,, ,,,,,,,,,,,,,,,, ,,,,
+,MASTERY,STAT,TIER,,USE,,,,NAME,PRIMARY,TIER,PROGRESS,,,,,BONUS ARCHETYPES,FEATURE,,DESCRIPTION,,,,,,,,,,,,,,,, ,,,,
+,Melee Mastery ,POWER,3,,TRUE,,,,Melee Mastery ,,3,,,,,,,,, ,,,,,,,,,,,,,,,, ,,,,
+,Ranged Mastery,FINESSE,1,,FALSE,,,,Ranged Mastery,,1,,,,,,,,, ,,,,,,,,,,,,,,,, ,,,,
+,Arcane Mastery,ACUMEN,1,,FALSE,,,,Arcane Mastery,,1,,,,,,,,, ,,,,,,,,,,,,,,,, ,,,,
+,,,,,,,,,Skullduggery ,INTUITION,,, ,,,,,,, ,,,,,,,,,,,,,,,, ,,,,
+,,,,,,,,,,,,, ,,,,,,, ,,,,,,,,,,,,,,,, ,,,,
+,,,,,,,,,,,,, ,,,,,,,,,,,,,,,,,,,,,,, ,,,,
+,,,,,,,,,,,,, ,,,,PROFESSION TALENTS,,,,,,,,,,,,,,,,,,, ,,,,
+,,,,,,,,,,,,, ,,,,INITIATE,,,,,,,,,,,,,,,,,,, ,,,,
+,,,,,,,,,,,,, ,,,,,, ,,,,,,,,,,,,,MANEUVER,,,,EFFECT,,,,SEELE COST
+,,,,,,,,,,,,, ,,,,,,,,,,,,,,,,,,,Fyllvir: Usir,,,,"Combine a defensive maneuver with a counterattack. As a reaction to being targeted by a melee attack, you can move up to half your movement speed without provoking reaction attacks and make a ranged attack against your attacker.",,,,3
+,,,,,,,,,,,,, ,,,,,,,,,,,,,,,,,,,The Long Breath Doctrine:  Third Lung,,,,You hold your breath continuously until the next time you speak or take damage.,,,,0
+,,,,,,,,,,,,, ,,,,,,,,,,,,,,,,,,,Evasive Maneuver,,,,"When you are targeted by an attack, gain 1D to your EVADE for every 3 SEELE you spend.",,,,Variable
+,,,,,,,,,,,,, ,,,,,,,,,,,,,,,,,,,,,,, ,,,, 
+,,,,,,,,,,,,, ,,,,,,,,,,,,,,,,,,,Riposte,,,,"Gain a bonus to your protection equal to half your highest Physique or Motorics skill. If the resulting strike would fail to damage through your Protection, you may make an immediate counterattack.",,,,3
+,,,,,,,,,,,,, ,,,,,,,,,,,,,,,,,,,,,,, ,,,, 
+,,,,,,,,,,,,, ,,,,SCHOLAR,,,,,,,,,,,,,,,,,,, ,,,, 
+,,,,,,,,,,,,, ,,,,,, ,,,,,,,,,,,,,,,,, ,,,, 
+,,,,,,,,,,,,, ,,,,,,,,,,,,,,,,,,,Cleaving Blow,,,,Your next melee attack can hit multiple enemies within range.,,,,1
+,,,,,,,,,,,,, ,,,,,,,,,,,,,,,,,,,,,,, ,,,, 
+,,,,,,,,,,,,, ,,,,,,,,,,,,,,,,,,,,,,, ,,,, 
+,,,,,,,,,,,,, ,,,,,,,,,,,,,,,,,,,,,,, ,,,, 
+,,,,,,,,,,,,, ,,,,,,,,,,,,,,,,,,,,,,, ,,,, 
+,,,,,,,,,,,,, ,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,, ,,,,PROVOST,,,,,,,,,,,,,,,INVENTORY,,,,,,,,
+,,,,,,,,,,,,, ,,,,,,,,,,,,,,,,,,,ITEM,,,DESCRIPTION,,,,,USAGE DICE
+,,,,,,,,,,,,, ,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,, ,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,, ,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,, ,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,, ,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,, ,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,, ,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,, ,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,, ,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,, ,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,, ,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,, ,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,, ,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,, ,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,, ,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,, ,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,, ,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,, ,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,, ,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,MAGICK,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,LANGUAGE,,,TRIAL,EFFECT,,,,TIER
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,, , ,,,,1
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,, , ,,,,1
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,, , ,,,,1
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,, , ,,,,1
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,, , ,,,,1
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,, , ,,,,1
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,, , ,,,,1
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,, , ,,,,1
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,, , ,,,,1
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,, , ,,,,1

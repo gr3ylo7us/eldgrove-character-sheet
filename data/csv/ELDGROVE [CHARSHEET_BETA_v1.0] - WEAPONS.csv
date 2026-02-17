@@ -1,0 +1,84 @@
+Name,Type,Dice,Mastery,Normal Damage,Crit Damage,Attacks,Damage Type,Effects,Upgrade Effects,Occupied Slot,KEYWORD,EFFECT,,,,,,,
+⚔️Steel Longsword,Melee Weapon,3,Melee Mastery,3,5,1,"Piercing, Bludgeoning, Slashing","Grappling 2, Balanced, Silent",,Versatile,Nimble,"When rolling attacks with this weapon, you may use either POWER or FINESSE as your scaling stat for Melee Mastery.",,,,,,,"Attacks and turn anatomy:
+
+Attacker rolls weapon dice, defender rolls Evasion Dice with Protection adding to success threshold. Shooting into Melee does not deal friendly fire damage; Shooting an enemy when you are flanking allows you to retain a failure as a success when attacking.
+
+SKULKING: 
+Roll SKULK, succ = number of times you can make noise or cross enemy LOS before being spotted. Enemy SEEK can shred this value. 
+Attacking from SKULK = add remaining SKULK as dice toward next Attack. Become Visible if within LOS, retain 1 SKULK if still hidden."
+⚔️Steel Dagger,Melee Weapon,1,Both,3,5,0,"Piercing, Slashing","Throwable, Off-hand, Silent","Grappling 1, Holdout",1-handed,Grappling X,You gain X bonus dice to grappling checks while occupying the same tile as the target of the grapple. ,,,,,,,
+⚔️Steel Rapier,Melee Weapon,2,Melee Mastery,3,5,1,"Piercing, Slashing","Reach,  Protective 1, Silent","Balanced, Piercing Crits 1",1-handed,Throwable,You can use this weapon as a projectile. ,,,,,,,
+🏹Recurve Bow,Projectile Weapon,3,Ranged Mastery,2,4,0,Piercing,"Silent, Punishing","Accurate 1, Piercing 1",2-handed,Holdout,You can hide this weapon on your person easily. It is not found during all but the most extensive of searches.,,,,,,,
+🏹Flintlock Pistol,Blackpowder Weapon,3,Ranged Mastery,3,4,0,Piercing,"Blackpowder, Anti-material 3",,"Versatile, Off-hand",Reload X,This weapon requires an action to reload. It must be reloaded after x attacks made with the weapon where x is the value after reload. ,,,,,,,
+🏹Blunderbuss,Blackpowder Weapon,3,Ranged Mastery,3,4,0,Piercing,"Blackpowder, Scatter",,2-handed,Crushing,Any successful attacks made with this weapon shred 1 additional protection until the targeted armor is repaired.,,,,,,,
+⚔️Steel Mace,Melee Weapon,2,Melee Mastery,3,5,0,Bludgeoning,"Off-hand, Devastating 2",,Versatile,Haft Attack,A half action can be used to make an attack with this weapon. That attack has a damage value of 1d + (Melee Mastery). ,,,,,,,
+⚔️Steel Buckler,Melee Weapon,1,Melee Mastery,1,2,,Bludgeoning,"Off-hand, Protective 2",Balanced,1-handed,Disabling,"A half action can be used to attempt to trip up a target, knocking them prone or disarming them on a successful attack instead of dealing damage. ",,,,,,,
+⚔️Steel Tomahawk,Melee Weapon,1,Both,3,5,0,Slashing,"Throwable, Off-hand","Balanced, Punishing",Versatile,Scatter,This weapon gains 1d per meter within 4 meters of the target,,,,,,,
+⚔️Steel Montante,Melee Weapon,5,Melee Mastery,3,5,1,"Slashing, Piercing, Bludgeoning","Heavy 1, Shock","Reach 1, Lethal 15+,",2-handed,Anti-material X,The target of this weapon rolls their EVADE dice with a success threshold of -X.,,,,,,,
+⚔️Warhammer,Melee Weapon,5,Melee Mastery,3,5,0,Bludgeoning,"Heavy, Devastating 3","Stun, Crushing, Reach 1",2-handed,Heavy,Reduces your movement by the heavy value.,,,,,,,
+⚔️Spear,Melee Weapon,3,Both,3,5,0,"Piercing, Bludgeoning","Haft Attack, Throwable","Reach 1, Disabling, Balanced, Rending",2-handed,Reach,The weapon can reach additional squares equal to its value,,,,,,,
+⚔️Quarterstaff,Melee Weapon,3,Melee Mastery,2,4,1,Bludgeoning,"Crushing, Haft Attack","Disabling, Reach 1, Ceaseless, Severe",2-handed,Versatile,"This weapon can be wielded with either one hand or two hands. When wielding a versatile weapon with two hands, you deal an additional 1d of damage with this weapon when attacking. ",,,,,,,
+⚔️Halberd,Melee Weapon,4,Melee Mastery,3,5,1,"Piercing, Bludgeoning, Slashing","Haft Attack, Disabling","Crushing, Reach 1, Balanced, Rending",2-handed,Off-hand,This weapon can be wielded in your offhand for the purpose of dual-wielding. This weapon deals 2d less without the Offhand Fighting feat.,,,,,,,
+🏹Crossbow,Projectile Weapon,3,Ranged Mastery,2,4,0,Piercing,"Reloading 1, Accurate 3","Balanced, Piercing 1, Silent",Versatile,Blackpowder,This weapon can only be reloaded with Gunner Archetypes.,,,,,,,
+🏹Pepperbox,Blackpowder Weapon,1,Ranged Mastery,2,4,,,"Blackpowder, Scatter","Anti-material 2, Torrent 1","Versatile, Off-hand",Ordinance,This weapon may only be operated by or moved by two or more entities,,,,,,,
+🏹Cannon,Blackpowder Weapon,,,,,,,"Blackpowder, Anti-material 5, Ordinance, Blast 3, Torrent 3, Shock, Stun",,2-handed,Accurate X,"You can retain up to x attack dice as normal successes
+without rolling them.",,,,,,,
+🏹Blackpowder Bomb,Explosive Weapon,7,,6,12,0,Explosive,"Crushing, Blast 5, Throwable, Shock, Stun, Torrent 5, Limited 1, Lethal 15+",,1-handed,Balanced,You can re-roll one of your attack dice.,,,,,,,
+🏹Flintlock Rifle,Blackpowder Weapon,4,Ranged Mastery,3,4,0,Piercing,"Blackpowder, Anti-material 3","Accurate 2, Piercing 1, Severe",2-handed,Blast X,"The target you select is the primary target. After shooting
+the primary target, shoot with this weapon against each secondary
+target in an order of your choice (roll each sequence separately).
+Secondary targets are other operatives visible to and within x of the
+primary target, e.g. Blast 2"" (they are all valid targets, regardless
+of a Conceal order). Secondary targets are in cover and obscured if
+the primary target was",,,,,,,
+⚔️Bare Fists,Natural Weapon,,Melee Mastery,2,4,,Bludgeoning,"Crushing, Off-hand, Silent","Grappling 3, Holdout",2-handed,Ceaseless," You can re-roll any of your attack dice results of one
+result (e.g. results of 2).",,,,,,,
+⚔️Steel Knuckles,Melee Weapon,2,Melee Mastery,3,5,,Bludgeoning,"Crushing, Off-hand","Grappling 3, Holdout",2-handed,Devastating X,"Each retained critical success immediately inflicts
+x damage on the operative this weapon is being used against,
+e.g. Devastating 3. If the rule starts with a distance (e.g. 1""
+Devastating x), inflict x damage on that operative and each other
+operative visible to and within that distance of it. Note that success
+isn’t discarded after doing so – it can still be resolved later in
+the sequence",,,,,,,
+,,,,,,,,,,,Hot,"After an operative uses this weapon, roll 1d: if the result
+is less than the weapon’s Hit stat, inflict damage on that operative
+equal to the result multiplied by two. If it’s used multiple times in
+one action (e.g. Blast), still only roll one 1d.",,,,,,,
+,,,,,,,,,,,Lethal X+,"Your successes equal to or greater than x are critical
+successes, e.g. Lethal 5+.",,,,,,,
+,,,,,,,,,,,Limited X,"After an operative uses this weapon a number of times
+in the battle equal to x, they no longer have it. If it’s used multiple
+times in one action (e.g. Blast), treat this as one use.",,,,,,,
+,,,,,,,,,,,Piercing X,"The defender collects x less defence dice, e.g.
+Piercing 1. If the rule is Piercing Crits x, this only comes into effect if
+you retain any critical successes.",,,,,,,
+,,,,,,,,,,,Punishing,"If you retain any critical successes, you can retain one of
+your fails as a normal success instead of discarding it",,,,,,,
+,,,,,,,,,,,Range X,"Only operatives within x of the active operative can be
+valid targets, e.g. Range 9""",,,,,,,
+,,,,,,,,,,,Relentless,You can re-roll any of your attack dice,,,,,,,
+,,,,,,,,,,,Rending," If you retain any critical successes, you can retain one of
+your normal successes as a critical success instead",,,,,,,
+,,,,,,,,,,,Saturate,The defender cannot retain cover saves.,,,,,,,
+,,,,,,,,,,,Seek,"When selecting a valid target, operatives with a Conceal order
+cannot use terrain for cover. If the rule is Seek Light, they cannot
+use Light terrain for cover. While this can allow operatives to be
+targeted (assuming they’re visible), it doesn’t remove their cover
+save (if any).",,,,,,,
+,,,,,,,,,,,Severe," If you don’t retain any critical successes, you can change
+one of your normal successes to a critical success. Any rules
+that take effect as a result of retaining a critical success (e.g.
+Devastating, Piercing Crits, etc.) still do.",,,,,,,
+,,,,,,,,,,,Shock,"The first time you strike with a critical success in each
+sequence, also discard one of your opponent’s unresolved normal
+successes (or one of their critical successes if there are none).",,,,,,,
+,,,,,,,,,,,Silent,You may attack with this weapon from SKULK without becoming VISIBLE and expend any SKULK you have to add dice to the ATTACK roll.,,,,,,,
+,,,,,,,,,,,Stun," If you retain any critical successes, subtract 1 from the Action Points
+of the operative this weapon is being used against until the end
+of its next activation.",,,,,,,
+,,,,,,,,,,,Torrent X,"Select a valid target as normal as the primary target,
+then select any number of other valid targets within x of the first
+valid target as secondary targets, e.g. Torrent 2"". Shoot with this
+weapon against all of them in an order of your choice (roll each
+sequence separately).",,,,,,,
+,,,,,,,,,,,Protective X,Reroll X EVADE dice when wielding this weapon,,,,,,,

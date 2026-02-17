@@ -1,18 +1,42 @@
-import { sql } from "drizzle-orm";
-import { pgTable, text, varchar } from "drizzle-orm/pg-core";
+
+import { pgTable, text, serial, integer, boolean, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const users = pgTable("users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+export const characters = pgTable("characters", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  race: text("race").default(""),
+  class: text("class").default(""),
+  level: integer("level").default(1),
+  
+  // Core Stats (flexible key-value storage for custom systems)
+  stats: jsonb("stats").default({}), 
+  // Derived stats/formulas can be computed on frontend or backend
+  
+  // Detailed data
+  skills: jsonb("skills").default([]),
+  equipment: jsonb("equipment").default([]),
+  abilities: jsonb("abilities").default([]),
+  
+  // Metadata
+  notes: text("notes").default(""),
+  imageUrl: text("image_url"),
+  isNpc: boolean("is_npc").default(false),
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
-});
+export const insertCharacterSchema = createInsertSchema(characters).omit({ id: true });
 
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
+export type Character = typeof characters.$inferSelect;
+export type InsertCharacter = z.infer<typeof insertCharacterSchema>;
+
+// Flexible stat type for the JSONB column
+export type Stat = {
+  name: string;
+  value: number;
+  modifier?: number;
+};
+
+// API Types
+export type CreateCharacterRequest = InsertCharacter;
+export type UpdateCharacterRequest = Partial<InsertCharacter>;

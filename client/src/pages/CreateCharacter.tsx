@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useLocation } from "wouter";
 import { useCreateCharacter } from "@/hooks/use-characters";
 import { useWeapons, useArmor, useSkills, useArchetypes, useFeats, useManeuvers, useLanguages } from "@/hooks/use-game-data";
@@ -127,6 +127,37 @@ function extractSkillNameFromFeat(featName: string): string | null {
   return null;
 }
 
+const ALL_SKILL_NAMES = [
+  "Melee Mastery", "Ranged Mastery", "Arcane Mastery",
+  "Acrobatics", "Animal Handling", "Artistry", "Arts", "Assimilation", "Athleticism",
+  "Bluff", "Business", "Composure", "Contortion", "Crafting", "Edge", "Endurance",
+  "Engineering", "Footwork", "History", "Homeostasis", "Hypersense", "Insight",
+  "Instinct", "Interfacing", "Intimidation", "Inventing", "Legerdemain", "Logic",
+  "Mathematics", "Medicine", "Orate", "Pain Tolerance", "Piloting", "Reaction Speed",
+  "Rhetoric", "Savoir Faire", "Science", "Sixth Sense", "Skullduggery",
+  "Social Engineering", "Technology", "Theology",
+];
+
+function extractSkillOpeningsFromFeatures(features: SelectedFeature[]): string[] {
+  const opened = new Set<string>();
+  for (const f of features) {
+    const text = f.feature;
+    const openMatch = text.match(/Open\s+(.+?)(?:\.|$)/i);
+    if (!openMatch) continue;
+    let segment = openMatch[1];
+    segment = segment
+      .replace(/Melee\s+and\s+Ranged\s+Mastery/gi, "Melee Mastery, Ranged Mastery")
+      .replace(/Melee\s+or\s+Ranged\s+Mastery/gi, "Melee Mastery, Ranged Mastery")
+      .replace(/Footwork\s+or\s+Led?gerdemain/gi, "Footwork, Legerdemain");
+    for (const skillName of ALL_SKILL_NAMES) {
+      if (segment.includes(skillName)) {
+        opened.add(skillName);
+      }
+    }
+  }
+  return Array.from(opened);
+}
+
 function archetypeFeaturesGrantLanguages(features: SelectedFeature[]): boolean {
   const langKeywords = ["learn a language", "learn an additional language", "learn one language", "learn two language", "learn three language", "language of"];
   return features.some(f => {
@@ -173,6 +204,7 @@ export default function CreateCharacter() {
   const [randomGenerated, setRandomGenerated] = useState(false);
   const [expandedSkillCat, setExpandedSkillCat] = useState<string | null>(null);
   const [weaponTypeFilter, setWeaponTypeFilter] = useState("Melee Weapon");
+  const prevGrantedSkillsRef = useRef<string[]>([]);
 
   const gameData: GameData | null = useMemo(() => {
     if (!allWeapons || !allArmor || !allSkills || !allArchetypes || !allFeats || !allManeuvers || !allLanguages) return null;
@@ -206,6 +238,8 @@ export default function CreateCharacter() {
     if (tier === "Scholar") return scholarFeatureSlots > 0;
     return false;
   };
+
+  const archetypeGrantedSkills = useMemo(() => extractSkillOpeningsFromFeatures(pickedFeatures), [pickedFeatures]);
 
   const initiateArchetypes = allArchetypes?.filter(a => a.tier === "Initiate") || [];
   const acolyteArchetypes = allArchetypes?.filter(a => a.tier === "Acolyte") || [];
@@ -596,11 +630,14 @@ export default function CreateCharacter() {
         <div className="space-y-1">
           <h4 className="text-sm font-semibold text-primary">Combat Masteries</h4>
           <div className="grid grid-cols-3 gap-2">
-            {combatSkills.map(s => (
-              <div key={s} className="flex items-center justify-between bg-secondary/30 rounded px-2 py-1.5">
+            {combatSkills.map(s => {
+              const isGranted = archetypeGrantedSkills.includes(s);
+              return (
+              <div key={s} className={`flex items-center justify-between rounded px-2 py-1.5 ${isGranted ? "bg-primary/10 border border-primary/20" : "bg-secondary/30"}`}>
                 <label className="flex items-center gap-2 cursor-pointer text-xs">
-                  <Checkbox checked={!!selectedSkills[s]} onCheckedChange={() => toggleSkill(s)} data-testid={`check-skill-${s}`} />
+                  <Checkbox checked={!!selectedSkills[s]} onCheckedChange={() => { if (!isGranted) toggleSkill(s); }} disabled={isGranted} data-testid={`check-skill-${s}`} />
                   {s}
+                  {isGranted && <span className="text-[10px] text-primary/70">(archetype)</span>}
                 </label>
                 {selectedSkills[s] && (
                   <div className="flex items-center gap-1">
@@ -610,7 +647,8 @@ export default function CreateCharacter() {
                   </div>
                 )}
               </div>
-            ))}
+            );
+            })}
           </div>
         </div>
 
@@ -624,12 +662,15 @@ export default function CreateCharacter() {
                 <ChevronDown className="w-4 h-4 text-muted-foreground" />
               </CollapsibleTrigger>
               <CollapsibleContent className="space-y-1 pt-1">
-                {catSkills.map(skill => (
-                  <div key={skill.name} className="flex items-center justify-between bg-secondary/20 rounded px-2 py-1">
+                {catSkills.map(skill => {
+                  const isGranted = archetypeGrantedSkills.includes(skill.name);
+                  return (
+                  <div key={skill.name} className={`flex items-center justify-between rounded px-2 py-1 ${isGranted ? "bg-primary/10 border border-primary/20" : "bg-secondary/20"}`}>
                     <label className="flex items-center gap-2 cursor-pointer text-xs flex-1">
-                      <Checkbox checked={!!selectedSkills[skill.name]} onCheckedChange={() => toggleSkill(skill.name)} data-testid={`check-skill-${skill.name}`} />
+                      <Checkbox checked={!!selectedSkills[skill.name]} onCheckedChange={() => { if (!isGranted) toggleSkill(skill.name); }} disabled={isGranted} data-testid={`check-skill-${skill.name}`} />
                       <span>{skill.name}</span>
                       <span className="text-muted-foreground">({skill.stat})</span>
+                      {isGranted && <span className="text-[10px] text-primary/70">(archetype)</span>}
                     </label>
                     {selectedSkills[skill.name] && (
                       <div className="flex items-center gap-1">
@@ -639,7 +680,8 @@ export default function CreateCharacter() {
                       </div>
                     )}
                   </div>
-                ))}
+                  );
+                })}
               </CollapsibleContent>
             </Collapsible>
           );
@@ -999,7 +1041,26 @@ export default function CreateCharacter() {
             <ArrowLeft className="w-4 h-4 mr-2" /> Back
           </Button>
           {step < STEPS.length - 1 ? (
-            <Button onClick={() => setStep(step + 1)} disabled={!canProceed()} data-testid="button-next-step">
+            <Button onClick={() => {
+              const nextStep = step + 1;
+              if (nextStep === 3) {
+                setSelectedSkills(prev => {
+                  const updated = { ...prev };
+                  const granted = new Set(archetypeGrantedSkills);
+                  for (const sk of prevGrantedSkillsRef.current) {
+                    if (!granted.has(sk) && updated[sk]) {
+                      delete updated[sk];
+                    }
+                  }
+                  for (const sk of archetypeGrantedSkills) {
+                    if (!updated[sk]) updated[sk] = 1;
+                  }
+                  prevGrantedSkillsRef.current = archetypeGrantedSkills;
+                  return updated;
+                });
+              }
+              setStep(nextStep);
+            }} disabled={!canProceed()} data-testid="button-next-step">
               Next <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           ) : (

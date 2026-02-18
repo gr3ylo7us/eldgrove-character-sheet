@@ -114,7 +114,7 @@ export const RULES: Record<string, RuleEntry> = {
   skulk: {
     title: "Skulk",
     category: "Resource",
-    formula: "Roll pool: Reflexes + Skullduggery skill tier",
+    formula: "Roll pool: Reflexes + Savoir Faire skill tier",
     description: "Your stealth health. Roll your Skulk pool to establish how stealthy you are - net successes become your Skulk HP.",
     usage: "Skulk HP depletes as you make noise or are spotted. Weapons/spells with the Silent property let you spend Skulk to add bonus sneak attack dice. Enemy Seek can shred this value.",
   },

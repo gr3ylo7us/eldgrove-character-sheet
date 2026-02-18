@@ -162,7 +162,6 @@ function SkulkTracker({ skulkMax, skulkCurrent, derivedSkulk, onMaxChange, onCur
           <EyeOff className="w-4 h-4 text-indigo-400" />
           <RulesTooltip ruleKey="skulk"><span className="text-sm font-semibold uppercase tracking-wider" style={{ fontFamily: "var(--font-display)" }}>Skulk</span></RulesTooltip>
         </div>
-        <Badge variant="outline" className="text-xs">{derivedSkulk}D pool</Badge>
       </div>
       <div className="flex items-center gap-3 flex-wrap">
         <div className="flex items-center gap-2">

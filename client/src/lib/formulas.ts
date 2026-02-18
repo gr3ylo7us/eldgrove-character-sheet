@@ -46,7 +46,7 @@ export function getEvade(c: Character): number {
 export function getSkulk(c: Character): number {
   const reflexes = getReflexes(c);
   const skillTiers = (c.skillTiers as Record<string, number>) || {};
-  return reflexes + (skillTiers["Skullduggery"] || 0);
+  return reflexes + (skillTiers["Savoir Faire"] || 0);
 }
 
 export function getSeeleMax(c: Character): number {

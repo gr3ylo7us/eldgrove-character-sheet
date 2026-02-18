@@ -94,7 +94,7 @@ data/csv/     - Source CSV files for game reference data
   - Maneuvers sorted by martial art type in Compendium and CompendiumDrawer
   - Weapons dropdown cleaned: server-side + client-side filtering by valid weapon types
 - Feb 2026: SKULK Overhaul & Silent Sneak Attack
-  - SKULK is now a rollable resource: Roll Skulk pool (Reflexes + Skullduggery) to establish HP
+  - SKULK is now a rollable resource: Roll Skulk pool (Reflexes + Savoir Faire) to establish HP
   - SKULK health bar with color-coded depletion (indigo -> amber -> red)
   - Removed "Roll Target" badge and "Set Max" button, replaced with "Roll Skulk" dice button
   - SKULK collapsible section added to both Combat and Roleplay datacards

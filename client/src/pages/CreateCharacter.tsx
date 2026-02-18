@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, ArrowRight, Sparkles, Dices, Check, Swords, Shield, Wand2, Target, Heart, Brain, Ghost, Flame, Feather, Zap, BookOpen, Eye, Crown, Users, ChevronDown, ChevronUp, Plus, Minus } from "lucide-react";
+import { ArrowLeft, ArrowRight, Sparkles, Dices, Check, Swords, Shield, Wand2, Target, Heart, Brain, Ghost, Flame, Feather, Zap, BookOpen, Eye, Crown, Users, ChevronDown, ChevronUp, Plus, Minus, Lock, Info } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { generateRandomCharacter, COMBAT_STYLES, ROLE_TYPES, getLevelRewards, type CombatStyle, type RoleType, type CharacterRole, type GameData } from "@/lib/characterGenerator";
 import type { InsertCharacter, Weapon, Archetype, Skill, Feat, Maneuver, Language, Armor } from "@shared/schema";
@@ -40,6 +40,14 @@ const STEPS = [
   { id: "equipment", label: "Equipment" },
   { id: "summary", label: "Summary" },
 ];
+
+const DEFAULT_ARMOR_NAMES = ["Threadbare Clothes", "Shoddy Leathers", "Rusted Plate"];
+
+interface SelectedFeature {
+  archetypeName: string;
+  tier: string;
+  feature: string;
+}
 
 function StepIndicator({ currentStep, steps }: { currentStep: number; steps: typeof STEPS }) {
   return (
@@ -111,6 +119,22 @@ function StatAllocator({ stats, onStatChange, bodyMindRemaining, spiritRemaining
   );
 }
 
+function extractSkillNameFromFeat(featName: string): string | null {
+  const combatMatch = featName.match(/^COMBAT SKILL FEAT:\s*(.+)$/i);
+  if (combatMatch) return combatMatch[1].trim();
+  const roleplayMatch = featName.match(/^ROLEPLAY SKILL FEAT:\s*(.+)$/i);
+  if (roleplayMatch) return roleplayMatch[1].trim();
+  return null;
+}
+
+function archetypeFeaturesGrantLanguages(features: SelectedFeature[]): boolean {
+  const langKeywords = ["learn a language", "learn an additional language", "learn one language", "learn two language", "learn three language", "language of"];
+  return features.some(f => {
+    const lower = f.feature.toLowerCase();
+    return langKeywords.some(kw => lower.includes(kw));
+  });
+}
+
 export default function CreateCharacter() {
   const [, navigate] = useLocation();
   const createMut = useCreateCharacter();
@@ -136,12 +160,7 @@ export default function CreateCharacter() {
     talent: 0, moxie: 1, audacity: 1,
   });
 
-  const [selectedInitiate, setSelectedInitiate] = useState<string>("");
-  const [selectedAcolyte, setSelectedAcolyte] = useState<string>("");
-  const [selectedScholar, setSelectedScholar] = useState<string>("");
-  const [initiateFeatures, setInitiateFeatures] = useState<string[]>([]);
-  const [acolyteFeatures, setAcolyteFeatures] = useState<string[]>([]);
-  const [scholarFeatures, setScholarFeatures] = useState<string[]>([]);
+  const [pickedFeatures, setPickedFeatures] = useState<SelectedFeature[]>([]);
 
   const [selectedSkills, setSelectedSkills] = useState<Record<string, number>>({});
   const [selectedFeats, setSelectedFeats] = useState<string[]>([]);
@@ -152,6 +171,8 @@ export default function CreateCharacter() {
   const [selectedArmor, setSelectedArmor] = useState<string>("");
 
   const [randomGenerated, setRandomGenerated] = useState(false);
+  const [expandedSkillCat, setExpandedSkillCat] = useState<string | null>(null);
+  const [weaponTypeFilter, setWeaponTypeFilter] = useState("Melee Weapon");
 
   const gameData: GameData | null = useMemo(() => {
     if (!allWeapons || !allArmor || !allSkills || !allArchetypes || !allFeats || !allManeuvers || !allLanguages) return null;
@@ -174,11 +195,17 @@ export default function CreateCharacter() {
   const totalFeatsCount = rewards.reduce((s, r) => s + r.feats, 0);
   const totalManeuverCount = rewards.reduce((s, r) => s + r.maneuvers, 0);
 
-  const needsInitiate = rewards.some(r => r.archetypeTier === "initiate");
-  const needsAcolyte = rewards.some(r => r.archetypeTier === "acolyte");
-  const needsScholar = rewards.some(r => r.archetypeTier === "scholar");
-  const acolyteFeatureSlots = rewards.filter(r => r.archetypeTier === "acolyte").length;
-  const scholarFeatureSlots = rewards.filter(r => r.archetypeTier === "scholar").length;
+  const initiateFeatureSlots = rewards.reduce((sum, r) => sum + (r.archetypeTier === "initiate" ? r.archetypeFeatureCount : 0), 0);
+  const acolyteFeatureSlots = rewards.reduce((sum, r) => sum + (r.archetypeTier === "acolyte" ? r.archetypeFeatureCount : 0), 0);
+  const scholarFeatureSlots = rewards.reduce((sum, r) => sum + (r.archetypeTier === "scholar" ? r.archetypeFeatureCount : 0), 0);
+  const totalFeatureSlots = initiateFeatureSlots + acolyteFeatureSlots + scholarFeatureSlots;
+
+  const hasAccessToTier = (tier: string) => {
+    if (tier === "Initiate") return initiateFeatureSlots > 0 || acolyteFeatureSlots > 0 || scholarFeatureSlots > 0;
+    if (tier === "Acolyte") return acolyteFeatureSlots > 0 || scholarFeatureSlots > 0;
+    if (tier === "Scholar") return scholarFeatureSlots > 0;
+    return false;
+  };
 
   const initiateArchetypes = allArchetypes?.filter(a => a.tier === "Initiate") || [];
   const acolyteArchetypes = allArchetypes?.filter(a => a.tier === "Acolyte") || [];
@@ -233,6 +260,17 @@ export default function CreateCharacter() {
     );
   };
 
+  const toggleFeature = (archetypeName: string, tier: string, feature: string) => {
+    setPickedFeatures(prev => {
+      const exists = prev.some(f => f.feature === feature && f.archetypeName === archetypeName);
+      if (exists) {
+        return prev.filter(f => !(f.feature === feature && f.archetypeName === archetypeName));
+      }
+      if (prev.length >= totalFeatureSlots) return prev;
+      return [...prev, { archetypeName, tier, feature }];
+    });
+  };
+
   const addWeapon = (w: Weapon) => {
     if (selectedWeapons.some(sw => sw.name === w.name)) return;
     setSelectedWeapons(prev => [...prev, {
@@ -259,16 +297,13 @@ export default function CreateCharacter() {
     });
 
     const sa = (char.selectedArchetypes as any[]) || [];
-    const init = sa.find((a: any) => a.tier === "Initiate");
-    const aco = sa.find((a: any) => a.tier === "Acolyte");
-    const sch = sa.find((a: any) => a.tier === "Scholar");
-
-    setSelectedInitiate(init?.name || "");
-    setSelectedAcolyte(aco?.name || "");
-    setSelectedScholar(sch?.name || "");
-    setInitiateFeatures(init?.selectedFeatures || []);
-    setAcolyteFeatures(aco?.selectedFeatures || []);
-    setScholarFeatures(sch?.selectedFeatures || []);
+    const newFeatures: SelectedFeature[] = [];
+    for (const arch of sa) {
+      for (const feat of (arch.selectedFeatures || [])) {
+        newFeatures.push({ archetypeName: arch.name, tier: arch.tier, feature: feat });
+      }
+    }
+    setPickedFeatures(newFeatures);
 
     setSelectedSkills((char.skillTiers as Record<string, number>) || {});
     setSelectedFeats((char.knownFeats as string[]) || []);
@@ -282,30 +317,16 @@ export default function CreateCharacter() {
   };
 
   const buildCharacter = (): InsertCharacter => {
-    const archetypesList: any[] = [];
-    const allFeatures: string[] = [];
-
-    if (selectedInitiate) {
-      const arch = allArchetypes?.find(a => a.name === selectedInitiate && a.tier === "Initiate");
-      if (arch) {
-        archetypesList.push({ name: arch.name, tier: "Initiate", selectedFeatures: initiateFeatures });
-        allFeatures.push(...initiateFeatures);
+    const archetypeMap: Record<string, { name: string; tier: string; selectedFeatures: string[] }> = {};
+    for (const pf of pickedFeatures) {
+      const key = `${pf.archetypeName}|${pf.tier}`;
+      if (!archetypeMap[key]) {
+        archetypeMap[key] = { name: pf.archetypeName, tier: pf.tier, selectedFeatures: [] };
       }
+      archetypeMap[key].selectedFeatures.push(pf.feature);
     }
-    if (selectedAcolyte) {
-      const arch = allArchetypes?.find(a => a.name === selectedAcolyte && a.tier === "Acolyte");
-      if (arch) {
-        archetypesList.push({ name: arch.name, tier: "Acolyte", selectedFeatures: acolyteFeatures });
-        allFeatures.push(...acolyteFeatures);
-      }
-    }
-    if (selectedScholar) {
-      const arch = allArchetypes?.find(a => a.name === selectedScholar && a.tier === "Scholar");
-      if (arch) {
-        archetypesList.push({ name: arch.name, tier: "Scholar", selectedFeatures: scholarFeatures });
-        allFeatures.push(...scholarFeatures);
-      }
-    }
+    const archetypesList = Object.values(archetypeMap);
+    const allFeatures = pickedFeatures.map(f => f.feature);
 
     const chosenArmor = allArmor?.find(a => a.name === selectedArmor);
     const bodySum = stats.power + stats.finesse + stats.vitality;
@@ -455,66 +476,75 @@ export default function CreateCharacter() {
   );
 
   const renderArchetype = () => {
-    const renderArchetypeSelector = (
-      tier: string,
-      options: Archetype[],
-      selected: string,
-      onSelect: (name: string) => void,
-      features: string[],
-      onFeaturesChange: (features: string[]) => void,
-      maxFeatures: number,
-      testIdPrefix: string,
-    ) => {
-      const selectedArch = options.find(a => a.name === selected);
-      const archFeatures = (selectedArch?.features as string[]) || [];
+    const slotsRemaining = totalFeatureSlots - pickedFeatures.length;
+
+    const renderArchetypeGroup = (tier: string, archetypes: Archetype[]) => {
+      if (!hasAccessToTier(tier)) return null;
+
       return (
-        <div className="space-y-3">
-          <h4 className="text-sm font-semibold text-primary">{tier} Archetype</h4>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {options.map(arch => (
-              <Button
-                key={arch.name}
-                variant={selected === arch.name ? "default" : "outline"}
-                className="text-xs justify-start"
-                onClick={() => {
-                  onSelect(arch.name);
-                  const af = (arch.features as string[]) || [];
-                  onFeaturesChange(af.slice(0, maxFeatures));
-                }}
-                data-testid={`${testIdPrefix}-${arch.name}`}
-              >
-                {arch.name}
-              </Button>
-            ))}
+        <div key={tier} className="space-y-3">
+          <h4 className="text-sm font-semibold text-primary">{tier} Archetypes</h4>
+          <div className="space-y-2">
+            {archetypes.map(arch => {
+              const archFeatures = (arch.features as string[]) || [];
+              const pickedFromThis = pickedFeatures.filter(f => f.archetypeName === arch.name && f.tier === tier);
+
+              return (
+                <Collapsible key={arch.name}>
+                  <CollapsibleTrigger className="flex items-center justify-between w-full text-xs font-semibold py-1.5 hover-elevate rounded px-2" data-testid={`toggle-arch-${tier}-${arch.name}`}>
+                    <span className="flex items-center gap-2">
+                      {arch.name}
+                      {pickedFromThis.length > 0 && (
+                        <Badge variant="secondary" className="text-[10px]">{pickedFromThis.length} picked</Badge>
+                      )}
+                    </span>
+                    <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-1 pt-1 pl-2 border-l-2 border-primary/20">
+                    {archFeatures.map((feat, i) => {
+                      const isSelected = pickedFeatures.some(f => f.feature === feat && f.archetypeName === arch.name);
+                      const canSelect = isSelected || slotsRemaining > 0;
+                      return (
+                        <label key={i} className="flex items-start gap-2 text-xs cursor-pointer py-1">
+                          <Checkbox
+                            checked={isSelected}
+                            disabled={!canSelect}
+                            onCheckedChange={() => toggleFeature(arch.name, tier, feat)}
+                            data-testid={`check-feature-${arch.name}-${i}`}
+                          />
+                          <span className={`leading-tight ${isSelected ? "text-foreground" : "text-muted-foreground"}`}>
+                            {feat}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </CollapsibleContent>
+                </Collapsible>
+              );
+            })}
           </div>
-          {selectedArch && archFeatures.length > 0 && (
-            <div className="space-y-1.5 pl-2 border-l-2 border-primary/30">
-              {archFeatures.map((feat, i) => (
-                <label key={i} className="flex items-start gap-2 text-xs cursor-pointer">
-                  <Checkbox
-                    checked={features.includes(feat)}
-                    disabled={i < maxFeatures}
-                    onCheckedChange={(checked) => {
-                      if (checked) onFeaturesChange([...features, feat]);
-                      else onFeaturesChange(features.filter(f => f !== feat));
-                    }}
-                    data-testid={`${testIdPrefix}-feature-${i}`}
-                  />
-                  <span className="text-muted-foreground leading-tight">{feat}</span>
-                </label>
-              ))}
-            </div>
-          )}
         </div>
       );
     };
 
     return (
-      <div className="space-y-6">
-        <p className="text-sm text-muted-foreground">Choose your archetypes. Each tier grants unique abilities.</p>
-        {needsInitiate && renderArchetypeSelector("Initiate", initiateArchetypes, selectedInitiate, setSelectedInitiate, initiateFeatures, setInitiateFeatures, 2, "btn-init")}
-        {needsAcolyte && renderArchetypeSelector("Acolyte", acolyteArchetypes, selectedAcolyte, setSelectedAcolyte, acolyteFeatures, setAcolyteFeatures, acolyteFeatureSlots, "btn-aco")}
-        {needsScholar && renderArchetypeSelector("Scholar", scholarArchetypes, selectedScholar, setSelectedScholar, scholarFeatures, setScholarFeatures, scholarFeatureSlots, "btn-sch")}
+      <div className="space-y-5">
+        <div className="space-y-2">
+          <p className="text-sm text-muted-foreground">
+            Pick individual features from any archetype you have access to. You can mix and match across archetypes within a tier, or spend higher-tier slots on lower-tier features.
+          </p>
+          <div className="flex gap-3 flex-wrap">
+            <Badge variant="outline" data-testid="badge-feature-slots">
+              Feature Slots: {pickedFeatures.length} / {totalFeatureSlots}
+            </Badge>
+            {initiateFeatureSlots > 0 && <Badge variant="outline">Initiate: {initiateFeatureSlots}</Badge>}
+            {acolyteFeatureSlots > 0 && <Badge variant="outline">Acolyte: {acolyteFeatureSlots}</Badge>}
+            {scholarFeatureSlots > 0 && <Badge variant="outline">Scholar: {scholarFeatureSlots}</Badge>}
+          </div>
+        </div>
+        {renderArchetypeGroup("Initiate", initiateArchetypes)}
+        {renderArchetypeGroup("Acolyte", acolyteArchetypes)}
+        {renderArchetypeGroup("Scholar", scholarArchetypes)}
       </div>
     );
   };
@@ -522,11 +552,38 @@ export default function CreateCharacter() {
   const renderSkills = () => {
     const skillCategories = ["Technique", "Relations", "Knowledge", "Awareness", "Physique", "Motorics"];
     const combatSkills = ["Melee Mastery", "Ranged Mastery", "Arcane Mastery"];
-    const [expandedCat, setExpandedCat] = useState<string | null>(null);
+
+    const selectedSkillNames = new Set(Object.keys(selectedSkills));
 
     const availableGeneralFeats = allFeats?.filter(f =>
-      !f.name.startsWith("COMBAT SKILL FEAT:") && !f.name.startsWith("ROLEPLAY SKILL FEAT:") && !f.name.startsWith("Martial Art:")
+      f.featType !== "COMBAT SKILL" && f.featType !== "ROLEPLAY SKILL" && f.featType !== "MARTIAL ARTS"
     ) || [];
+
+    const combatSkillFeats = allFeats?.filter(f => f.featType === "COMBAT SKILL") || [];
+    const roleplaySkillFeats = allFeats?.filter(f => f.featType === "ROLEPLAY SKILL") || [];
+    const martialArtsFeats = allFeats?.filter(f => f.featType === "MARTIAL ARTS") || [];
+
+    const eligibleCombatSkillFeats = combatSkillFeats.filter(f => {
+      const skillName = extractSkillNameFromFeat(f.name);
+      return skillName && selectedSkillNames.has(skillName);
+    });
+
+    const eligibleRoleplaySkillFeats = roleplaySkillFeats.filter(f => {
+      const skillName = extractSkillNameFromFeat(f.name);
+      return skillName && selectedSkillNames.has(skillName);
+    });
+
+    const eligibleManeuvers = allManeuvers?.filter(m => {
+      if (!m.prerequisite || m.prerequisite.trim() === "") return true;
+      return selectedFeats.includes(m.prerequisite);
+    }) || [];
+
+    const lockedManeuvers = allManeuvers?.filter(m => {
+      if (!m.prerequisite || m.prerequisite.trim() === "") return false;
+      return !selectedFeats.includes(m.prerequisite);
+    }) || [];
+
+    const languagesGranted = archetypeFeaturesGrantLanguages(pickedFeatures);
 
     return (
       <div className="space-y-4">
@@ -561,7 +618,7 @@ export default function CreateCharacter() {
           const catSkills = allSkills?.filter(s => s.category === cat) || [];
           if (catSkills.length === 0) return null;
           return (
-            <Collapsible key={cat} open={expandedCat === cat} onOpenChange={(open) => setExpandedCat(open ? cat : null)}>
+            <Collapsible key={cat} open={expandedSkillCat === cat} onOpenChange={(open) => setExpandedSkillCat(open ? cat : null)}>
               <CollapsibleTrigger className="flex items-center justify-between w-full text-sm font-semibold py-1.5 hover-elevate rounded px-2" data-testid={`toggle-skill-cat-${cat}`}>
                 <span>{cat} <span className="text-xs text-muted-foreground font-normal">({catSkills.filter(s => selectedSkills[s.name]).length} selected)</span></span>
                 <ChevronDown className="w-4 h-4 text-muted-foreground" />
@@ -590,11 +647,69 @@ export default function CreateCharacter() {
 
         <Collapsible>
           <CollapsibleTrigger className="flex items-center justify-between w-full text-sm font-semibold py-1.5 hover-elevate rounded px-2" data-testid="toggle-feats-section">
-            <span>Feats <span className="text-xs text-muted-foreground font-normal">({selectedFeats.length} selected)</span></span>
+            <span>General Feats <span className="text-xs text-muted-foreground font-normal">({selectedFeats.filter(f => availableGeneralFeats.some(gf => gf.name === f)).length} selected)</span></span>
             <ChevronDown className="w-4 h-4 text-muted-foreground" />
           </CollapsibleTrigger>
           <CollapsibleContent className="space-y-1 pt-1 max-h-60 overflow-y-auto">
             {availableGeneralFeats.map(feat => (
+              <label key={feat.name} className="flex items-start gap-2 text-xs cursor-pointer bg-secondary/20 rounded px-2 py-1.5">
+                <Checkbox checked={selectedFeats.includes(feat.name)} onCheckedChange={() => toggleFeat(feat.name)} className="mt-0.5" data-testid={`check-feat-${feat.name}`} />
+                <div>
+                  <span className="font-semibold">{feat.name}</span>
+                  {feat.effect && <p className="text-muted-foreground mt-0.5 leading-tight">{feat.effect.slice(0, 120)}{feat.effect.length > 120 ? "..." : ""}</p>}
+                </div>
+              </label>
+            ))}
+          </CollapsibleContent>
+        </Collapsible>
+
+        {eligibleCombatSkillFeats.length > 0 && (
+          <Collapsible>
+            <CollapsibleTrigger className="flex items-center justify-between w-full text-sm font-semibold py-1.5 hover-elevate rounded px-2" data-testid="toggle-combat-skill-feats">
+              <span>Combat Skill Feats <span className="text-xs text-muted-foreground font-normal">({selectedFeats.filter(f => eligibleCombatSkillFeats.some(cf => cf.name === f)).length} eligible)</span></span>
+              <ChevronDown className="w-4 h-4 text-muted-foreground" />
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-1 pt-1 max-h-60 overflow-y-auto">
+              {eligibleCombatSkillFeats.map(feat => (
+                <label key={feat.name} className="flex items-start gap-2 text-xs cursor-pointer bg-secondary/20 rounded px-2 py-1.5">
+                  <Checkbox checked={selectedFeats.includes(feat.name)} onCheckedChange={() => toggleFeat(feat.name)} className="mt-0.5" data-testid={`check-feat-${feat.name}`} />
+                  <div>
+                    <span className="font-semibold">{feat.name}</span>
+                    {feat.effect && <p className="text-muted-foreground mt-0.5 leading-tight">{feat.effect.slice(0, 120)}{feat.effect.length > 120 ? "..." : ""}</p>}
+                  </div>
+                </label>
+              ))}
+            </CollapsibleContent>
+          </Collapsible>
+        )}
+
+        {eligibleRoleplaySkillFeats.length > 0 && (
+          <Collapsible>
+            <CollapsibleTrigger className="flex items-center justify-between w-full text-sm font-semibold py-1.5 hover-elevate rounded px-2" data-testid="toggle-roleplay-skill-feats">
+              <span>Roleplay Skill Feats <span className="text-xs text-muted-foreground font-normal">({selectedFeats.filter(f => eligibleRoleplaySkillFeats.some(rf => rf.name === f)).length} eligible)</span></span>
+              <ChevronDown className="w-4 h-4 text-muted-foreground" />
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-1 pt-1 max-h-60 overflow-y-auto">
+              {eligibleRoleplaySkillFeats.map(feat => (
+                <label key={feat.name} className="flex items-start gap-2 text-xs cursor-pointer bg-secondary/20 rounded px-2 py-1.5">
+                  <Checkbox checked={selectedFeats.includes(feat.name)} onCheckedChange={() => toggleFeat(feat.name)} className="mt-0.5" data-testid={`check-feat-${feat.name}`} />
+                  <div>
+                    <span className="font-semibold">{feat.name}</span>
+                    {feat.effect && <p className="text-muted-foreground mt-0.5 leading-tight">{feat.effect.slice(0, 120)}{feat.effect.length > 120 ? "..." : ""}</p>}
+                  </div>
+                </label>
+              ))}
+            </CollapsibleContent>
+          </Collapsible>
+        )}
+
+        <Collapsible>
+          <CollapsibleTrigger className="flex items-center justify-between w-full text-sm font-semibold py-1.5 hover-elevate rounded px-2" data-testid="toggle-martial-arts-feats">
+            <span>Martial Arts <span className="text-xs text-muted-foreground font-normal">({selectedFeats.filter(f => martialArtsFeats.some(mf => mf.name === f)).length} selected)</span></span>
+            <ChevronDown className="w-4 h-4 text-muted-foreground" />
+          </CollapsibleTrigger>
+          <CollapsibleContent className="space-y-1 pt-1 max-h-60 overflow-y-auto">
+            {martialArtsFeats.map(feat => (
               <label key={feat.name} className="flex items-start gap-2 text-xs cursor-pointer bg-secondary/20 rounded px-2 py-1.5">
                 <Checkbox checked={selectedFeats.includes(feat.name)} onCheckedChange={() => toggleFeat(feat.name)} className="mt-0.5" data-testid={`check-feat-${feat.name}`} />
                 <div>
@@ -612,15 +727,30 @@ export default function CreateCharacter() {
             <ChevronDown className="w-4 h-4 text-muted-foreground" />
           </CollapsibleTrigger>
           <CollapsibleContent className="space-y-1 pt-1 max-h-60 overflow-y-auto">
-            {allManeuvers?.map(m => (
+            {eligibleManeuvers.map(m => (
               <label key={m.name} className="flex items-start gap-2 text-xs cursor-pointer bg-secondary/20 rounded px-2 py-1.5">
                 <Checkbox checked={selectedManeuvers.includes(m.name)} onCheckedChange={() => toggleManeuver(m.name)} className="mt-0.5" data-testid={`check-maneuver-${m.name}`} />
                 <div>
                   <span className="font-semibold">{m.name}</span>
+                  {m.prerequisite && <Badge variant="outline" className="text-[10px] ml-1">Req: {m.prerequisite}</Badge>}
                   {m.effect && <p className="text-muted-foreground mt-0.5 leading-tight">{m.effect.slice(0, 100)}{m.effect.length > 100 ? "..." : ""}</p>}
                 </div>
               </label>
             ))}
+            {lockedManeuvers.length > 0 && (
+              <div className="mt-2 pt-2 border-t border-border/30">
+                <p className="text-[10px] text-muted-foreground flex items-center gap-1 mb-1"><Lock className="w-3 h-3" /> Locked maneuvers (need prerequisite martial art feat)</p>
+                {lockedManeuvers.map(m => (
+                  <div key={m.name} className="flex items-start gap-2 text-xs bg-secondary/10 rounded px-2 py-1 opacity-50">
+                    <Lock className="w-3 h-3 mt-0.5 shrink-0" />
+                    <div>
+                      <span className="font-semibold">{m.name}</span>
+                      <Badge variant="outline" className="text-[10px] ml-1">Req: {m.prerequisite}</Badge>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </CollapsibleContent>
         </Collapsible>
 
@@ -630,9 +760,20 @@ export default function CreateCharacter() {
             <ChevronDown className="w-4 h-4 text-muted-foreground" />
           </CollapsibleTrigger>
           <CollapsibleContent className="space-y-1 pt-1">
+            {!languagesGranted && (
+              <div className="flex items-center gap-2 text-xs text-amber-500 bg-amber-500/10 rounded px-3 py-2 mb-1" data-testid="languages-locked-message">
+                <Lock className="w-3.5 h-3.5 shrink-0" />
+                <span>Magical languages require archetype features that grant language learning (e.g. Mage's "Magical Education", Priest's "Faith").</span>
+              </div>
+            )}
             {allLanguages?.map(lang => (
-              <label key={lang.name} className="flex items-center gap-2 text-xs cursor-pointer bg-secondary/20 rounded px-2 py-1.5">
-                <Checkbox checked={selectedLanguages.includes(lang.name)} onCheckedChange={() => toggleLanguage(lang.name)} data-testid={`check-lang-${lang.name}`} />
+              <label key={lang.name} className={`flex items-center gap-2 text-xs cursor-pointer bg-secondary/20 rounded px-2 py-1.5 ${!languagesGranted ? "opacity-50" : ""}`}>
+                <Checkbox
+                  checked={selectedLanguages.includes(lang.name)}
+                  onCheckedChange={() => toggleLanguage(lang.name)}
+                  disabled={!languagesGranted}
+                  data-testid={`check-lang-${lang.name}`}
+                />
                 <span className="font-semibold">{lang.name}</span>
                 <span className="text-muted-foreground">- {lang.domain}</span>
                 <Badge variant="outline" className="text-[10px] ml-auto">Cost {lang.difficulty}</Badge>
@@ -646,8 +787,10 @@ export default function CreateCharacter() {
 
   const renderEquipment = () => {
     const weaponTypes = ["Melee Weapon", "Projectile Weapon", "Blackpowder Weapon"];
-    const [weaponTypeFilter, setWeaponTypeFilter] = useState(weaponTypes[0]);
     const filteredWeapons = allWeapons?.filter(w => w.type === weaponTypeFilter && w.dice && w.dice > 0) || [];
+
+    const starterArmor = allArmor?.filter(a => DEFAULT_ARMOR_NAMES.includes(a.name)) || [];
+    const otherArmor = allArmor?.filter(a => !DEFAULT_ARMOR_NAMES.includes(a.name)) || [];
 
     return (
       <div className="space-y-4">
@@ -696,11 +839,26 @@ export default function CreateCharacter() {
           <Select value={selectedArmor} onValueChange={setSelectedArmor}>
             <SelectTrigger data-testid="select-armor"><SelectValue placeholder="Choose armor..." /></SelectTrigger>
             <SelectContent>
-              {allArmor?.map(a => (
-                <SelectItem key={a.name} value={a.name}>
-                  {a.name} (Prot: {a.protection}, Evade: {a.evasionDice}D)
-                </SelectItem>
-              ))}
+              {starterArmor.length > 0 && (
+                <>
+                  <SelectItem value="__starter_header" disabled className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Starter Armor</SelectItem>
+                  {starterArmor.map(a => (
+                    <SelectItem key={a.name} value={a.name}>
+                      {a.name} (Prot: {a.protection}, Evade: {a.evasionDice}D)
+                    </SelectItem>
+                  ))}
+                </>
+              )}
+              {otherArmor.length > 0 && (
+                <>
+                  <SelectItem value="__other_header" disabled className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Advanced Armor</SelectItem>
+                  {otherArmor.map(a => (
+                    <SelectItem key={a.name} value={a.name}>
+                      {a.name} (Prot: {a.protection}, Evade: {a.evasionDice}D)
+                    </SelectItem>
+                  ))}
+                </>
+              )}
             </SelectContent>
           </Select>
           {selectedArmor && (() => {
@@ -720,9 +878,6 @@ export default function CreateCharacter() {
 
   const renderSummary = () => {
     const char = buildCharacter();
-    const bodySum = (char.power ?? 0) + (char.finesse ?? 0) + (char.vitality ?? 0);
-    const mindSum = (char.acumen ?? 0) + (char.diplomacy ?? 0) + (char.intuition ?? 0);
-    const spiritSum = (char.talent ?? 0) + (char.moxie ?? 0) + (char.audacity ?? 0);
 
     return (
       <div className="space-y-4">

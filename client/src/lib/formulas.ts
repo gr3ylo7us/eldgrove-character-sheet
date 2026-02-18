@@ -1,11 +1,21 @@
 import type { Character } from "@shared/schema";
 
 export function getReflexes(c: Character): number {
-  return (c.finesse ?? 1) + (c.acumen ?? 1);
+  const pow = c.power ?? 1;
+  const fin = c.finesse ?? 1;
+  const vit = c.vitality ?? 1;
+  const highest = Math.max(pow, fin, vit);
+  const avg = Math.ceil((pow + fin + vit) / 3);
+  return highest + avg;
 }
 
 export function getSeek(c: Character): number {
-  return (c.acumen ?? 1) + (c.intuition ?? 1) + 1;
+  const acu = c.acumen ?? 1;
+  const dip = c.diplomacy ?? 1;
+  const int = c.intuition ?? 1;
+  const highest = Math.max(acu, dip, int);
+  const avg = Math.ceil((acu + dip + int) / 3);
+  return highest + avg;
 }
 
 export function getNerve(c: Character): number {
@@ -40,7 +50,9 @@ export function getSkulk(c: Character): number {
 }
 
 export function getSeeleMax(c: Character): number {
-  return (c.vitality ?? 1) + (c.diplomacy ?? 1) + (c.intuition ?? 1) + (c.acumen ?? 1);
+  const total = (c.power ?? 1) + (c.finesse ?? 1) + (c.vitality ?? 1) +
+                (c.acumen ?? 1) + (c.diplomacy ?? 1) + (c.intuition ?? 1);
+  return Math.floor(total / 2);
 }
 
 export function getWeaponAttack(c: Character, weapon: any): number {
@@ -49,7 +61,7 @@ export function getWeaponAttack(c: Character, weapon: any): number {
   if (weapon.mastery === "Melee Mastery") mastery = skillTiers["Melee Mastery"] || 0;
   else if (weapon.mastery === "Ranged Mastery") mastery = skillTiers["Ranged Mastery"] || 0;
   else if (weapon.mastery === "Both") mastery = Math.max(skillTiers["Melee Mastery"] || 0, skillTiers["Ranged Mastery"] || 0);
-  return (weapon.dice || 0) + mastery + (weapon.attacks || 0);
+  return (weapon.dice || 0) + mastery;
 }
 
 export function getSpellCast(c: Character, lang: any): number {

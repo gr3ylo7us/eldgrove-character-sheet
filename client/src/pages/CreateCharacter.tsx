@@ -37,6 +37,8 @@ const STEPS = [
   { id: "stats", label: "Stats" },
   { id: "archetype", label: "Archetype" },
   { id: "skills", label: "Skills" },
+  { id: "feats-maneuvers", label: "Feats & Maneuvers" },
+  { id: "languages", label: "Languages" },
   { id: "equipment", label: "Equipment" },
   { id: "summary", label: "Summary" },
 ];
@@ -166,6 +168,48 @@ function archetypeFeaturesGrantLanguages(features: SelectedFeature[]): boolean {
   });
 }
 
+const NUMBER_WORDS: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, an: 1, a: 1 };
+
+function parseNumberWord(word: string): number {
+  const n = NUMBER_WORDS[word.toLowerCase()];
+  if (n !== undefined) return n;
+  const parsed = parseInt(word, 10);
+  return isNaN(parsed) ? 0 : parsed;
+}
+
+function extractBonusesFromFeatures(features: SelectedFeature[]): { bonusFeats: number; bonusManeuvers: number; bonusLanguages: number } {
+  let bonusFeats = 0;
+  let bonusManeuvers = 0;
+  let bonusLanguages = 0;
+
+  for (const f of features) {
+    const text = f.feature;
+
+    const featManeuverMatch = text.match(/(\w+)\s+Feat(?:s)?\s+and\s+(\w+)\s+Maneuver(?:s)?/i);
+    if (featManeuverMatch) {
+      const featWord = featManeuverMatch[1].toLowerCase();
+      if (featWord === "additional") {
+        bonusFeats += 1;
+      } else {
+        bonusFeats += parseNumberWord(featManeuverMatch[1]);
+      }
+      bonusManeuvers += parseNumberWord(featManeuverMatch[2]);
+    }
+
+    const langAdditional = text.match(/Learn\s+an\s+additional\s+Language/i);
+    if (langAdditional) {
+      bonusLanguages += 1;
+    } else {
+      const langMatch = text.match(/Learn\s+(\w+)\s+Language(?:s)?/i);
+      if (langMatch) {
+        bonusLanguages += parseNumberWord(langMatch[1]);
+      }
+    }
+  }
+
+  return { bonusFeats, bonusManeuvers, bonusLanguages };
+}
+
 export default function CreateCharacter() {
   const [, navigate] = useLocation();
   const createMut = useCreateCharacter();
@@ -240,6 +284,7 @@ export default function CreateCharacter() {
   };
 
   const archetypeGrantedSkills = useMemo(() => extractSkillOpeningsFromFeatures(pickedFeatures), [pickedFeatures]);
+  const archetypeBonuses = useMemo(() => extractBonusesFromFeatures(pickedFeatures), [pickedFeatures]);
 
   const initiateArchetypes = allArchetypes?.filter(a => a.tier === "Initiate") || [];
   const acolyteArchetypes = allArchetypes?.filter(a => a.tier === "Acolyte") || [];
@@ -414,9 +459,11 @@ export default function CreateCharacter() {
       case 0: return renderBasics();
       case 1: return renderStats();
       case 2: return renderArchetype();
-      case 3: return renderSkills();
-      case 4: return renderEquipment();
-      case 5: return renderSummary();
+      case 3: return renderSkillsOnly();
+      case 4: return renderFeatsManeuvers();
+      case 5: return renderLanguages();
+      case 6: return renderEquipment();
+      case 7: return renderSummary();
       default: return null;
     }
   };
@@ -583,48 +630,14 @@ export default function CreateCharacter() {
     );
   };
 
-  const renderSkills = () => {
+  const renderSkillsOnly = () => {
     const skillCategories = ["Technique", "Relations", "Knowledge", "Awareness", "Physique", "Motorics"];
     const combatSkills = ["Melee Mastery", "Ranged Mastery", "Arcane Mastery"];
-
-    const selectedSkillNames = new Set(Object.keys(selectedSkills));
-
-    const availableGeneralFeats = allFeats?.filter(f =>
-      f.featType !== "COMBAT SKILL" && f.featType !== "ROLEPLAY SKILL" && f.featType !== "MARTIAL ARTS"
-    ) || [];
-
-    const combatSkillFeats = allFeats?.filter(f => f.featType === "COMBAT SKILL") || [];
-    const roleplaySkillFeats = allFeats?.filter(f => f.featType === "ROLEPLAY SKILL") || [];
-    const martialArtsFeats = allFeats?.filter(f => f.featType === "MARTIAL ARTS") || [];
-
-    const eligibleCombatSkillFeats = combatSkillFeats.filter(f => {
-      const skillName = extractSkillNameFromFeat(f.name);
-      return skillName && selectedSkillNames.has(skillName);
-    });
-
-    const eligibleRoleplaySkillFeats = roleplaySkillFeats.filter(f => {
-      const skillName = extractSkillNameFromFeat(f.name);
-      return skillName && selectedSkillNames.has(skillName);
-    });
-
-    const eligibleManeuvers = allManeuvers?.filter(m => {
-      if (!m.prerequisite || m.prerequisite.trim() === "") return true;
-      return selectedFeats.includes(m.prerequisite);
-    }) || [];
-
-    const lockedManeuvers = allManeuvers?.filter(m => {
-      if (!m.prerequisite || m.prerequisite.trim() === "") return false;
-      return !selectedFeats.includes(m.prerequisite);
-    }) || [];
-
-    const languagesGranted = archetypeFeaturesGrantLanguages(pickedFeatures);
 
     return (
       <div className="space-y-4">
         <div className="flex gap-3 flex-wrap">
           <Badge variant="outline">Skill Slots: {Object.keys(selectedSkills).length} / {totalSkillOpenings + totalSkillFeats + 6}</Badge>
-          <Badge variant="outline">Feats: {selectedFeats.length} / {Math.max(1, totalFeatsCount + totalSkillFeats)}</Badge>
-          <Badge variant="outline">Maneuvers: {selectedManeuvers.length} / {Math.max(2, totalManeuverCount)}</Badge>
         </div>
 
         <div className="space-y-1">
@@ -686,6 +699,47 @@ export default function CreateCharacter() {
             </Collapsible>
           );
         })}
+      </div>
+    );
+  };
+
+  const renderFeatsManeuvers = () => {
+    const selectedSkillNames = new Set(Object.keys(selectedSkills));
+
+    const availableGeneralFeats = allFeats?.filter(f =>
+      f.featType !== "COMBAT SKILL" && f.featType !== "ROLEPLAY SKILL" && f.featType !== "MARTIAL ARTS"
+    ) || [];
+
+    const combatSkillFeats = allFeats?.filter(f => f.featType === "COMBAT SKILL") || [];
+    const roleplaySkillFeats = allFeats?.filter(f => f.featType === "ROLEPLAY SKILL") || [];
+    const martialArtsFeats = allFeats?.filter(f => f.featType === "MARTIAL ARTS") || [];
+
+    const eligibleCombatSkillFeats = combatSkillFeats.filter(f => {
+      const skillName = extractSkillNameFromFeat(f.name);
+      return skillName && selectedSkillNames.has(skillName);
+    });
+
+    const eligibleRoleplaySkillFeats = roleplaySkillFeats.filter(f => {
+      const skillName = extractSkillNameFromFeat(f.name);
+      return skillName && selectedSkillNames.has(skillName);
+    });
+
+    const eligibleManeuvers = allManeuvers?.filter(m => {
+      if (!m.prerequisite || m.prerequisite.trim() === "") return true;
+      return selectedFeats.includes(m.prerequisite);
+    }) || [];
+
+    const lockedManeuvers = allManeuvers?.filter(m => {
+      if (!m.prerequisite || m.prerequisite.trim() === "") return false;
+      return !selectedFeats.includes(m.prerequisite);
+    }) || [];
+
+    return (
+      <div className="space-y-4">
+        <div className="flex gap-3 flex-wrap">
+          <Badge variant="outline">Feats: {selectedFeats.length} / {Math.max(1, totalFeatsCount + totalSkillFeats + archetypeBonuses.bonusFeats)}</Badge>
+          <Badge variant="outline">Maneuvers: {selectedManeuvers.length} / {Math.max(2, totalManeuverCount + archetypeBonuses.bonusManeuvers)}</Badge>
+        </div>
 
         <Collapsible>
           <CollapsibleTrigger className="flex items-center justify-between w-full text-sm font-semibold py-1.5 hover-elevate rounded px-2" data-testid="toggle-feats-section">
@@ -795,34 +849,38 @@ export default function CreateCharacter() {
             )}
           </CollapsibleContent>
         </Collapsible>
+      </div>
+    );
+  };
 
-        <Collapsible>
-          <CollapsibleTrigger className="flex items-center justify-between w-full text-sm font-semibold py-1.5 hover-elevate rounded px-2" data-testid="toggle-languages-section">
-            <span>Magick Languages <span className="text-xs text-muted-foreground font-normal">({selectedLanguages.length} selected)</span></span>
-            <ChevronDown className="w-4 h-4 text-muted-foreground" />
-          </CollapsibleTrigger>
-          <CollapsibleContent className="space-y-1 pt-1">
-            {!languagesGranted && (
-              <div className="flex items-center gap-2 text-xs text-amber-500 bg-amber-500/10 rounded px-3 py-2 mb-1" data-testid="languages-locked-message">
-                <Lock className="w-3.5 h-3.5 shrink-0" />
-                <span>Magical languages require archetype features that grant language learning (e.g. Mage's "Magical Education", Priest's "Faith").</span>
-              </div>
-            )}
-            {allLanguages?.map(lang => (
-              <label key={lang.name} className={`flex items-center gap-2 text-xs cursor-pointer bg-secondary/20 rounded px-2 py-1.5 ${!languagesGranted ? "opacity-50" : ""}`}>
-                <Checkbox
-                  checked={selectedLanguages.includes(lang.name)}
-                  onCheckedChange={() => toggleLanguage(lang.name)}
-                  disabled={!languagesGranted}
-                  data-testid={`check-lang-${lang.name}`}
-                />
-                <span className="font-semibold">{lang.name}</span>
-                <span className="text-muted-foreground">- {lang.domain}</span>
-                <Badge variant="outline" className="text-[10px] ml-auto">Cost {lang.difficulty}</Badge>
-              </label>
-            ))}
-          </CollapsibleContent>
-        </Collapsible>
+  const renderLanguages = () => {
+    const languagesGranted = archetypeFeaturesGrantLanguages(pickedFeatures);
+
+    return (
+      <div className="space-y-4">
+        <div className="flex gap-3 flex-wrap">
+          <Badge variant="outline">Languages: {selectedLanguages.length} / {archetypeBonuses.bonusLanguages}</Badge>
+        </div>
+
+        {!languagesGranted && (
+          <div className="flex items-center gap-2 text-xs text-amber-500 bg-amber-500/10 rounded px-3 py-2 mb-1" data-testid="languages-locked-message">
+            <Lock className="w-3.5 h-3.5 shrink-0" />
+            <span>Magical languages require archetype features that grant language learning (e.g. Mage's "Magical Education", Priest's "Faith").</span>
+          </div>
+        )}
+        {allLanguages?.map(lang => (
+          <label key={lang.name} className={`flex items-center gap-2 text-xs cursor-pointer bg-secondary/20 rounded px-2 py-1.5 ${!languagesGranted ? "opacity-50" : ""}`}>
+            <Checkbox
+              checked={selectedLanguages.includes(lang.name)}
+              onCheckedChange={() => toggleLanguage(lang.name)}
+              disabled={!languagesGranted}
+              data-testid={`check-lang-${lang.name}`}
+            />
+            <span className="font-semibold">{lang.name}</span>
+            <span className="text-muted-foreground">- {lang.domain}</span>
+            <Badge variant="outline" className="text-[10px] ml-auto">Cost {lang.difficulty}</Badge>
+          </label>
+        ))}
       </div>
     );
   };

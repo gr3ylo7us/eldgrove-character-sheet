@@ -1,10 +1,10 @@
-import { useState, useCallback, createContext, useContext } from "react";
+import { useState, useCallback, useRef, createContext, useContext } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Dices, Trash2, Sparkles, Minus, Plus, TrendingDown, RotateCcw, Zap, Shield, Wand2 } from "lucide-react";
+import { Dices, Trash2, Sparkles, Minus, Plus, TrendingDown, RotateCcw, Zap, Shield, Wand2, EyeOff } from "lucide-react";
 
 export interface DieResult {
   value: number;
@@ -12,9 +12,10 @@ export interface DieResult {
   isCrit: boolean;
   isSubtract: boolean;
   rerolled?: boolean;
+  isSneakDie?: boolean;
 }
 
-export type RollType = "manual" | "stat" | "weapon" | "spell" | "skill" | "evade";
+export type RollType = "manual" | "stat" | "weapon" | "spell" | "skill" | "evade" | "skulk";
 
 export interface DamageInfo {
   normalDamage?: string;
@@ -39,6 +40,7 @@ export interface RollResult {
   damageInfo?: DamageInfo;
   damageOutput?: string;
   convertedToEffects: number;
+  sneakDice: number;
 }
 
 export interface RollOptions {
@@ -48,13 +50,16 @@ export interface RollOptions {
   effects?: string[];
   rollType?: RollType;
   damageInfo?: DamageInfo;
+  isSilent?: boolean;
+  skulkAvailable?: number;
 }
 
 interface DiceRollerContextType {
-  rollDice: (opts: RollOptions) => RollResult;
+  rollDice: (opts: RollOptions) => RollResult | null;
   openRoller: () => void;
   closeRoller: () => void;
   isOpen: boolean;
+  onSkulkSpent: React.MutableRefObject<((amount: number) => void) | null>;
 }
 
 const DiceRollerContext = createContext<DiceRollerContextType | null>(null);
@@ -134,12 +139,16 @@ function DieDisplay({ die, onClick, clickable }: { die: DieResult; onClick?: () 
   else if (die.isSubtract) border = "border-red-500/50";
   else if (die.isSuccess) border = "border-emerald-500/50";
 
+  if (die.isSneakDie) {
+    border = die.isCrit ? "border-amber-500/50" : die.isSubtract ? "border-red-500/50" : die.isSuccess ? "border-emerald-500/50" : "border-indigo-500/50";
+  }
+
   return (
     <div
       className={`relative w-10 h-11 flex items-center justify-center text-sm font-bold font-mono ${clickable ? "cursor-pointer" : ""} ${die.rerolled ? "ring-1 ring-primary/40" : ""}`}
       style={{ clipPath: hexClip }}
       onClick={clickable ? onClick : undefined}
-      title={clickable ? "Click to reroll" : undefined}
+      title={clickable ? "Click to reroll" : die.isSneakDie ? "Sneak attack die" : undefined}
       data-testid="die-result"
     >
       <div className={`absolute inset-0 ${bg}`} style={{ clipPath: hexClip }} />
@@ -147,6 +156,9 @@ function DieDisplay({ die, onClick, clickable }: { die: DieResult; onClick?: () 
       <span className="relative z-10">{die.value}</span>
       {die.rerolled && (
         <RotateCcw className="absolute top-0 right-0 w-2.5 h-2.5 text-primary/60 z-10" />
+      )}
+      {die.isSneakDie && !die.rerolled && (
+        <EyeOff className="absolute top-0 right-0 w-2.5 h-2.5 text-indigo-400 z-10" />
       )}
     </div>
   );
@@ -169,8 +181,10 @@ function RollResultDisplay({ result, onReroll, onConvertEffect }: {
     <Card className="p-3 space-y-2">
       <div className="flex items-center justify-between gap-2">
         <span className="text-sm font-semibold" style={{ fontFamily: "var(--font-display)" }}>{result.label}</span>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {result.rollType === "evade" && <Badge variant="outline" className="text-[10px]"><Shield className="w-2.5 h-2.5 mr-0.5" />Evade</Badge>}
+          {result.rollType === "skulk" && <Badge variant="outline" className="text-[10px]"><EyeOff className="w-2.5 h-2.5 mr-0.5" />Skulk</Badge>}
+          {result.sneakDice > 0 && <Badge variant="outline" className="text-[10px] border-indigo-500/50 text-indigo-400"><EyeOff className="w-2.5 h-2.5 mr-0.5" />+{result.sneakDice} sneak</Badge>}
           {result.threshold !== 11 && <Badge variant="outline" className="text-[10px]">TN {result.threshold}+</Badge>}
           <Badge variant={isPositive ? "default" : isNegative ? "destructive" : "secondary"} className="text-xs">
             {result.netSuccesses} net
@@ -237,22 +251,81 @@ function RollResultDisplay({ result, onReroll, onConvertEffect }: {
   );
 }
 
+function SneakAttackPanel({ pendingRoll, onRoll, onCancel }: {
+  pendingRoll: RollOptions;
+  onRoll: (sneakDice: number) => void;
+  onCancel: () => void;
+}) {
+  const maxSneak = pendingRoll.skulkAvailable ?? 0;
+  const [sneakDice, setSneakDice] = useState(0);
+
+  return (
+    <Card className="p-4 mb-4 space-y-3 border-indigo-500/30">
+      <div className="flex items-center gap-2">
+        <EyeOff className="w-4 h-4 text-indigo-400" />
+        <span className="text-sm font-semibold" style={{ fontFamily: "var(--font-display)" }}>Sneak Attack</span>
+        <Badge variant="outline" className="text-[10px] ml-auto">Silent</Badge>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        This attack has the Silent property. Spend SKULK to add bonus dice to your attack roll.
+      </p>
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-xs text-muted-foreground">SKULK available: <span className="text-indigo-400 font-bold">{maxSneak}</span></span>
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-muted-foreground">Spend:</span>
+        <Button size="icon" variant="ghost" onClick={() => setSneakDice(Math.max(0, sneakDice - 1))} disabled={sneakDice <= 0} data-testid="button-sneak-dec">
+          <Minus className="w-3 h-3" />
+        </Button>
+        <span className="text-lg font-bold text-indigo-400 w-8 text-center" data-testid="text-sneak-dice">{sneakDice}</span>
+        <Button size="icon" variant="ghost" onClick={() => setSneakDice(Math.min(maxSneak, sneakDice + 1))} disabled={sneakDice >= maxSneak} data-testid="button-sneak-inc">
+          <Plus className="w-3 h-3" />
+        </Button>
+        <span className="text-xs text-muted-foreground ml-2">
+          Total pool: <span className="font-bold">{pendingRoll.poolSize + sneakDice}d20</span>
+        </span>
+      </div>
+      {maxSneak <= 0 && (
+        <p className="text-xs text-destructive">No SKULK remaining. Roll without sneak bonus.</p>
+      )}
+      <div className="flex gap-2">
+        <Button className="flex-1" onClick={() => onRoll(sneakDice)} data-testid="button-confirm-sneak-roll">
+          <Dices className="w-4 h-4 mr-2" />
+          Roll {pendingRoll.poolSize + sneakDice}d20
+          {sneakDice > 0 && <span className="ml-1 text-indigo-300">(+{sneakDice} sneak)</span>}
+        </Button>
+        <Button variant="outline" onClick={onCancel} data-testid="button-cancel-sneak">
+          Skip
+        </Button>
+      </div>
+    </Card>
+  );
+}
+
 export function DiceRollerProvider({ children }: { children: React.ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
   const [history, setHistory] = useState<RollResult[]>([]);
   const [manualPool, setManualPool] = useState(3);
   const [manualThreshold, setManualThreshold] = useState(11);
   const [manualLabel, setManualLabel] = useState("Manual Roll");
+  const [pendingSilentRoll, setPendingSilentRoll] = useState<RollOptions | null>(null);
+  const onSkulkSpentRef = useRef<((amount: number) => void) | null>(null);
 
-  const rollDice = useCallback((opts: RollOptions) => {
+  const executeRoll = useCallback((opts: RollOptions, sneakDice: number = 0): RollResult => {
     const { poolSize, label, threshold = 11, effects, rollType = "manual", damageInfo } = opts;
-    const result = rollPool(poolSize, threshold);
+    const totalPool = poolSize + sneakDice;
+    const result = rollPool(totalPool, threshold);
+    if (sneakDice > 0) {
+      for (let i = poolSize; i < totalPool; i++) {
+        result.dice[i].isSneakDie = true;
+      }
+    }
     const dmg = calculateDamage(result.netSuccesses, result.totalCrits, damageInfo);
     const rollResult: RollResult = {
       id: Date.now(),
       label,
       ...result,
-      poolSize,
+      poolSize: totalPool,
       threshold,
       timestamp: new Date(),
       effects,
@@ -260,18 +333,46 @@ export function DiceRollerProvider({ children }: { children: React.ReactNode }) 
       damageInfo,
       damageOutput: dmg,
       convertedToEffects: 0,
+      sneakDice,
     };
     setHistory(prev => [rollResult, ...prev].slice(0, 20));
-    setIsOpen(true);
     return rollResult;
   }, []);
+
+  const rollDice = useCallback((opts: RollOptions): RollResult | null => {
+    if (opts.isSilent && (opts.skulkAvailable ?? 0) > 0) {
+      setPendingSilentRoll(opts);
+      setIsOpen(true);
+      return null;
+    }
+    const result = executeRoll(opts);
+    setIsOpen(true);
+    return result;
+  }, [executeRoll]);
+
+  const handleSneakRoll = useCallback((sneakDice: number) => {
+    if (!pendingSilentRoll) return;
+    const result = executeRoll(pendingSilentRoll, sneakDice);
+    if (sneakDice > 0 && onSkulkSpentRef.current) {
+      onSkulkSpentRef.current(sneakDice);
+    }
+    setPendingSilentRoll(null);
+  }, [pendingSilentRoll, executeRoll]);
+
+  const handleCancelSneak = useCallback(() => {
+    if (!pendingSilentRoll) return;
+    executeRoll(pendingSilentRoll, 0);
+    setPendingSilentRoll(null);
+  }, [pendingSilentRoll, executeRoll]);
 
   const handleReroll = useCallback((rollId: number, dieIndex: number) => {
     setHistory(prev => prev.map(r => {
       if (r.id !== rollId) return r;
       const newDice = [...r.dice];
+      const wasSneakDie = newDice[dieIndex].isSneakDie;
       const newDie = rollSingleDie(r.threshold);
       newDie.rerolled = true;
+      newDie.isSneakDie = wasSneakDie;
       newDice[dieIndex] = newDie;
       const stats = computeResults(newDice);
       const dmg = calculateDamage(stats.netSuccesses, stats.totalCrits, r.damageInfo, r.convertedToEffects);
@@ -289,9 +390,9 @@ export function DiceRollerProvider({ children }: { children: React.ReactNode }) 
   }, []);
 
   return (
-    <DiceRollerContext.Provider value={{ rollDice, openRoller: () => setIsOpen(true), closeRoller: () => setIsOpen(false), isOpen }}>
+    <DiceRollerContext.Provider value={{ rollDice, openRoller: () => setIsOpen(true), closeRoller: () => setIsOpen(false), isOpen, onSkulkSpent: onSkulkSpentRef }}>
       {children}
-      <Sheet open={isOpen} onOpenChange={setIsOpen}>
+      <Sheet open={isOpen} onOpenChange={(open) => { setIsOpen(open); if (!open) setPendingSilentRoll(null); }}>
         <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto" data-testid="dice-roller-drawer">
           <SheetHeader className="mb-4">
             <SheetTitle className="flex items-center gap-2 text-primary" style={{ fontFamily: "var(--font-display)" }}>
@@ -301,58 +402,68 @@ export function DiceRollerProvider({ children }: { children: React.ReactNode }) 
             <SheetDescription>Roll d20 pools. 11+ = success, 18-20 = crit (2 hits), 1-3 = subtract. Click dice to reroll.</SheetDescription>
           </SheetHeader>
 
-          <Card className="p-4 mb-4 space-y-3">
-            <div className="flex items-center gap-2">
-              <Input
-                value={manualLabel}
-                onChange={e => setManualLabel(e.target.value)}
-                className="flex-1"
-                placeholder="Roll label..."
-                data-testid="input-dice-label"
-              />
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1">
-                <span className="text-xs text-muted-foreground w-10">Pool:</span>
-                <Button size="icon" variant="ghost" onClick={() => setManualPool(Math.max(1, manualPool - 1))} data-testid="button-pool-dec">
-                  <Minus className="w-3 h-3" />
-                </Button>
+          {pendingSilentRoll && (
+            <SneakAttackPanel
+              pendingRoll={pendingSilentRoll}
+              onRoll={handleSneakRoll}
+              onCancel={handleCancelSneak}
+            />
+          )}
+
+          {!pendingSilentRoll && (
+            <Card className="p-4 mb-4 space-y-3">
+              <div className="flex items-center gap-2">
                 <Input
-                  type="number"
-                  className="w-14 text-center"
-                  value={manualPool}
-                  onChange={e => setManualPool(Math.max(1, parseInt(e.target.value) || 1))}
-                  data-testid="input-dice-pool"
+                  value={manualLabel}
+                  onChange={e => setManualLabel(e.target.value)}
+                  className="flex-1"
+                  placeholder="Roll label..."
+                  data-testid="input-dice-label"
                 />
-                <Button size="icon" variant="ghost" onClick={() => setManualPool(manualPool + 1)} data-testid="button-pool-inc">
-                  <Plus className="w-3 h-3" />
-                </Button>
               </div>
-              <div className="flex items-center gap-1">
-                <span className="text-xs text-muted-foreground w-8">TN:</span>
-                <Button size="icon" variant="ghost" onClick={() => setManualThreshold(Math.max(1, manualThreshold - 1))} data-testid="button-threshold-dec">
-                  <Minus className="w-3 h-3" />
-                </Button>
-                <Input
-                  type="number"
-                  className="w-14 text-center"
-                  value={manualThreshold}
-                  onChange={e => setManualThreshold(Math.max(1, Math.min(20, parseInt(e.target.value) || 11)))}
-                  data-testid="input-dice-threshold"
-                />
-                <Button size="icon" variant="ghost" onClick={() => setManualThreshold(Math.min(20, manualThreshold + 1))} data-testid="button-threshold-inc">
-                  <Plus className="w-3 h-3" />
-                </Button>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1">
+                  <span className="text-xs text-muted-foreground w-10">Pool:</span>
+                  <Button size="icon" variant="ghost" onClick={() => setManualPool(Math.max(1, manualPool - 1))} data-testid="button-pool-dec">
+                    <Minus className="w-3 h-3" />
+                  </Button>
+                  <Input
+                    type="number"
+                    className="w-14 text-center"
+                    value={manualPool}
+                    onChange={e => setManualPool(Math.max(1, parseInt(e.target.value) || 1))}
+                    data-testid="input-dice-pool"
+                  />
+                  <Button size="icon" variant="ghost" onClick={() => setManualPool(manualPool + 1)} data-testid="button-pool-inc">
+                    <Plus className="w-3 h-3" />
+                  </Button>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-xs text-muted-foreground w-8">TN:</span>
+                  <Button size="icon" variant="ghost" onClick={() => setManualThreshold(Math.max(1, manualThreshold - 1))} data-testid="button-threshold-dec">
+                    <Minus className="w-3 h-3" />
+                  </Button>
+                  <Input
+                    type="number"
+                    className="w-14 text-center"
+                    value={manualThreshold}
+                    onChange={e => setManualThreshold(Math.max(1, Math.min(20, parseInt(e.target.value) || 11)))}
+                    data-testid="input-dice-threshold"
+                  />
+                  <Button size="icon" variant="ghost" onClick={() => setManualThreshold(Math.min(20, manualThreshold + 1))} data-testid="button-threshold-inc">
+                    <Plus className="w-3 h-3" />
+                  </Button>
+                </div>
               </div>
-            </div>
-            <Button
-              className="w-full"
-              onClick={() => rollDice({ poolSize: manualPool, label: manualLabel, threshold: manualThreshold })}
-              data-testid="button-roll-dice"
-            >
-              <Dices className="w-4 h-4 mr-2" /> Roll {manualPool}d20
-            </Button>
-          </Card>
+              <Button
+                className="w-full"
+                onClick={() => rollDice({ poolSize: manualPool, label: manualLabel, threshold: manualThreshold })}
+                data-testid="button-roll-dice"
+              >
+                <Dices className="w-4 h-4 mr-2" /> Roll {manualPool}d20
+              </Button>
+            </Card>
+          )}
 
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-mono text-muted-foreground uppercase tracking-wider">Roll History</span>

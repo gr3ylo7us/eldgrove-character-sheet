@@ -70,7 +70,7 @@ data/csv/     - Source CSV files for game reference data
   - Fixed CSV parser to handle multi-line quoted fields
 - Feb 2026: Major UI overhaul
   - Wound healthbar: Visual bar with color-coded Woundscale progression (Uninjured -> Death's Door)
-  - Skulk tracker: Rollable max/current system with "Set Max" button and progress bar
+  - Skulk tracker: Rollable resource with health bar (roll pool sets max/current, color-coded depletion)
   - Multi-archetype system: Classless design - add multiple archetypes with per-feature checkboxes
   - Addable skills: Skills tab uses add/remove workflow instead of full list
   - Seele bar: Visual progress bar for current/max Seele
@@ -93,3 +93,13 @@ data/csv/     - Source CSV files for game reference data
   - Language "Difficulty" renamed to "COST" across all UI surfaces
   - Maneuvers sorted by martial art type in Compendium and CompendiumDrawer
   - Weapons dropdown cleaned: server-side + client-side filtering by valid weapon types
+- Feb 2026: SKULK Overhaul & Silent Sneak Attack
+  - SKULK is now a rollable resource: Roll Skulk pool (Reflexes + Skullduggery) to establish HP
+  - SKULK health bar with color-coded depletion (indigo -> amber -> red)
+  - Removed "Roll Target" badge and "Set Max" button, replaced with "Roll Skulk" dice button
+  - SKULK collapsible section added to both Combat and Roleplay datacards
+  - Silent weapon/spell mechanic: weapons/spells with "Silent" property show sneak attack panel
+  - Sneak attack: spend SKULK points to add bonus dice to attack rolls
+  - SKULK depletion syncs across CharacterSheet and Datacards via onSkulkSpent callback
+  - DiceRoller: pendingSilentRoll state shows SneakAttackPanel before rolling Silent attacks
+  - Sneak dice visually distinguished with indigo borders and EyeOff icon in roll results

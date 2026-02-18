@@ -145,20 +145,26 @@ function WoundBar({ wounds, maxWounds, onChange }: { wounds: number; maxWounds: 
   );
 }
 
-function SkulkTracker({ skulkMax, skulkCurrent, derivedSkulk, onMaxChange, onCurrentChange }: {
+function SkulkTracker({ skulkMax, skulkCurrent, derivedSkulk, onMaxChange, onCurrentChange, onRollSkulk }: {
   skulkMax: number; skulkCurrent: number; derivedSkulk: number;
   onMaxChange: (v: number) => void; onCurrentChange: (v: number) => void;
+  onRollSkulk: () => void;
 }) {
+  const pct = skulkMax > 0 ? Math.min((skulkCurrent / skulkMax) * 100, 100) : 0;
+  let barColor = "bg-indigo-500";
+  if (pct <= 25) barColor = "bg-red-500";
+  else if (pct <= 50) barColor = "bg-amber-500";
+
   return (
     <div className="space-y-2" data-testid="skulk-tracker">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <EyeOff className="w-4 h-4 text-primary/60" />
+          <EyeOff className="w-4 h-4 text-indigo-400" />
           <RulesTooltip ruleKey="skulk"><span className="text-sm font-semibold uppercase tracking-wider" style={{ fontFamily: "var(--font-display)" }}>Skulk</span></RulesTooltip>
         </div>
-        <Badge variant="outline" className="text-xs">Roll Target: {derivedSkulk}D</Badge>
+        <Badge variant="outline" className="text-xs">{derivedSkulk}D pool</Badge>
       </div>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-wrap">
         <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground">Current</span>
           <div className="flex items-center gap-1">
@@ -174,30 +180,22 @@ function SkulkTracker({ skulkMax, skulkCurrent, derivedSkulk, onMaxChange, onCur
           </div>
         </div>
         <span className="text-muted-foreground">/</span>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">Max</span>
-          <Button size="icon" variant="ghost" onClick={() => onMaxChange(Math.max(0, skulkMax - 1))} data-testid="button-skulk-max-dec">
-              <span>-</span>
-            </Button>
-            <Input type="number" className="w-14 text-center" value={skulkMax}
-            onChange={e => onMaxChange(Math.max(0, parseInt(e.target.value) || 0))}
-            data-testid="input-skulk-max" />
-            <Button size="icon" variant="ghost" onClick={() => onMaxChange(skulkMax + 1)} data-testid="button-skulk-max-inc">
-              <span>+</span>
-            </Button>
-        </div>
-        <Button variant="outline" onClick={() => { onMaxChange(derivedSkulk); onCurrentChange(derivedSkulk); }} data-testid="button-skulk-set-max">
-          <Dices className="w-3 h-3 mr-1" /> Set Max
+        <span className="text-sm font-bold" data-testid="text-skulk-max">{skulkMax}</span>
+        <Button variant="outline" onClick={onRollSkulk} data-testid="button-skulk-roll">
+          <Dices className="w-3 h-3 mr-1" /> Roll Skulk ({derivedSkulk}D)
         </Button>
       </div>
-      {skulkMax > 0 && (
-        <div className="relative h-2 bg-secondary/60 rounded overflow-hidden">
-          <div
-            className="absolute inset-y-0 left-0 bg-indigo-500 transition-all duration-300"
-            style={{ width: `${skulkMax > 0 ? (skulkCurrent / skulkMax) * 100 : 0}%` }}
-          />
-        </div>
-      )}
+      <div className="relative h-3 bg-secondary/60 rounded overflow-hidden">
+        <div
+          className={`absolute inset-y-0 left-0 ${barColor} transition-all duration-300`}
+          style={{ width: `${pct}%` }}
+        />
+        {skulkMax > 0 && (
+          <span className="absolute inset-0 flex items-center justify-center text-[9px] font-bold text-white mix-blend-difference">
+            {skulkCurrent} / {skulkMax}
+          </span>
+        )}
+      </div>
     </div>
   );
 }
@@ -223,7 +221,7 @@ export default function CharacterSheetPage() {
   const id = parseInt(params.id || "0");
   const { data: character, isLoading } = useCharacter(id);
   const updateMut = useUpdateCharacter(id);
-  const { rollDice } = useDiceRoller();
+  const { rollDice, onSkulkSpent } = useDiceRoller();
   const { data: allWeapons } = useWeapons();
   const { data: allArmor } = useArmor();
   const { data: allSkills } = useSkills();
@@ -244,6 +242,17 @@ export default function CharacterSheetPage() {
     setForm(prev => ({ ...prev, [key]: value }));
     setDirty(true);
   }, []);
+
+  useEffect(() => {
+    onSkulkSpent.current = (amount: number) => {
+      setForm(prev => {
+        const newCurrent = Math.max(0, (prev.skulkCurrent ?? 0) - amount);
+        return { ...prev, skulkCurrent: newCurrent };
+      });
+      setDirty(true);
+    };
+    return () => { onSkulkSpent.current = null; };
+  }, [onSkulkSpent]);
 
   const save = () => {
     const { id: _id, ...rest } = form;
@@ -441,6 +450,14 @@ export default function CharacterSheetPage() {
                   derivedSkulk={getSkulk(c)}
                   onMaxChange={v => update("skulkMax", v)}
                   onCurrentChange={v => update("skulkCurrent", v)}
+                  onRollSkulk={() => {
+                    const result = rollDice({ poolSize: getSkulk(c), label: "Skulk Roll", rollType: "skulk" });
+                    if (result) {
+                      const total = Math.max(0, result.netSuccesses);
+                      update("skulkMax", total);
+                      update("skulkCurrent", total);
+                    }
+                  }}
                 />
               </Card>
             </div>
@@ -537,7 +554,7 @@ export default function CharacterSheetPage() {
                       {w.effects && <p className="text-xs text-muted-foreground/70 italic mt-2">{w.effects}</p>}
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
-                      <Button size="icon" variant="ghost" onClick={() => rollDice({ poolSize: getWeaponAttack(c, w), label: `${w.name} Attack`, rollType: "weapon", effects: w.effects ? [w.effects] : [], damageInfo: { normalDamage: w.normalDamage, critDamage: w.critDamage, damageType: w.damageType } })} data-testid={`button-roll-weapon-${i}`}>
+                      <Button size="icon" variant="ghost" onClick={() => rollDice({ poolSize: getWeaponAttack(c, w), label: `${w.name} Attack`, rollType: "weapon", effects: w.effects ? [w.effects] : [], damageInfo: { normalDamage: w.normalDamage, critDamage: w.critDamage, damageType: w.damageType }, isSilent: !!(w.effects && w.effects.toLowerCase().includes("silent")), skulkAvailable: form.skulkCurrent ?? 0 })} data-testid={`button-roll-weapon-${i}`}>
                         <Dices className="w-3 h-3" />
                       </Button>
                       <Button size="icon" variant="ghost" onClick={() => {
@@ -598,7 +615,8 @@ export default function CharacterSheetPage() {
                               disabled={(c.seeleCurrent ?? 0) < (lang.difficulty ?? 0)}
                               onClick={() => {
                                 update("seeleCurrent", (c.seeleCurrent ?? 0) - (lang.difficulty || 0));
-                                rollDice({ poolSize: getSpellCast(c, lang), label: `Cast ${lname}`, rollType: "spell", effects: lang.tags ? [lang.tags] : [], damageInfo: lang.damage ? { languageDamage: lang.damage } : undefined });
+                                const hasSilent = !!(lang.tags && lang.tags.toLowerCase().includes("silent"));
+                                rollDice({ poolSize: getSpellCast(c, lang), label: `Cast ${lname}`, rollType: "spell", effects: lang.tags ? [lang.tags] : [], damageInfo: lang.damage ? { languageDamage: lang.damage } : undefined, isSilent: hasSilent, skulkAvailable: form.skulkCurrent ?? 0 });
                               }}
                               data-testid={`button-roll-spell-${lname}`}
                               className={(c.seeleCurrent ?? 0) < (lang.difficulty ?? 0) ? "text-destructive" : ""}

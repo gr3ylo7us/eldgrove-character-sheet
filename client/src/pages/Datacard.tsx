@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, Link } from "wouter";
 import { useCharacter, useUpdateCharacter } from "@/hooks/use-characters";
 import { useLanguages, useFeats, useManeuvers, useSkills } from "@/hooks/use-game-data";
@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ArrowLeft, Swords, BookOpen, Shield, Heart, Zap, Sparkles, Minus, Plus, Activity, Wand2, Languages, Dices, ChevronDown, BookMarked, Crown, Star, Crosshair, Feather } from "lucide-react";
+import { ArrowLeft, Swords, BookOpen, Shield, Heart, Zap, Sparkles, Minus, Plus, Activity, Wand2, Languages, Dices, ChevronDown, BookMarked, Crown, Star, Crosshair, Feather, EyeOff } from "lucide-react";
 import { STAT_LABELS, getReflexes, getSeek, getNerve, getHealth, getWill, getAptitude, getMove, getEvade, getSkulk, getSeeleMax, getWeaponAttack, getSpellCast, getWoundscaleThreshold } from "@/lib/formulas";
 import type { Character } from "@shared/schema";
 import { RulesTooltip } from "@/components/RulesTooltip";
@@ -253,6 +253,59 @@ function SkillsSection({ character, rollDice }: { character: Character; rollDice
   );
 }
 
+function SkulkBar({ character, onUpdate, rollDice }: { character: Character; onUpdate: (key: string, value: any) => void; rollDice: (opts: RollOptions) => any }) {
+  const c = character;
+  const skulkMax = c.skulkMax ?? 0;
+  const skulkCurrent = c.skulkCurrent ?? 0;
+  const derivedSkulk = getSkulk(c);
+  const pct = skulkMax > 0 ? Math.min((skulkCurrent / skulkMax) * 100, 100) : 0;
+  let barColor = "bg-indigo-500";
+  if (pct <= 25) barColor = "bg-red-500";
+  else if (pct <= 50) barColor = "bg-amber-500";
+
+  return (
+    <div className="space-y-2" data-testid="dc-skulk-bar">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">Current</span>
+          <div className="flex items-center gap-1">
+            <Button size="icon" variant="ghost" onClick={() => onUpdate("skulkCurrent", Math.max(0, skulkCurrent - 1))} data-testid="button-dc-skulk-dec">
+              <Minus className="w-3 h-3" />
+            </Button>
+            <span className="text-lg font-bold text-indigo-400 w-8 text-center" data-testid="text-dc-skulk-current">{skulkCurrent}</span>
+            <Button size="icon" variant="ghost" onClick={() => onUpdate("skulkCurrent", skulkCurrent + 1)} data-testid="button-dc-skulk-inc">
+              <Plus className="w-3 h-3" />
+            </Button>
+          </div>
+          <span className="text-muted-foreground">/</span>
+          <span className="text-sm font-bold" data-testid="text-dc-skulk-max">{skulkMax}</span>
+        </div>
+        <Button variant="outline" onClick={() => {
+          const result = rollDice({ poolSize: derivedSkulk, label: "Skulk Roll", rollType: "skulk" });
+          if (result) {
+            const total = Math.max(0, result.netSuccesses);
+            onUpdate("skulkMax", total);
+            onUpdate("skulkCurrent", total);
+          }
+        }} data-testid="button-dc-skulk-roll">
+          <Dices className="w-3 h-3 mr-1" /> Roll ({derivedSkulk}D)
+        </Button>
+      </div>
+      <div className="relative h-3 bg-secondary/60 rounded overflow-hidden">
+        <div
+          className={`absolute inset-y-0 left-0 ${barColor} transition-all duration-300`}
+          style={{ width: `${pct}%` }}
+        />
+        {skulkMax > 0 && (
+          <span className="absolute inset-0 flex items-center justify-center text-[9px] font-bold text-white mix-blend-difference">
+            {skulkCurrent} / {skulkMax}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function CombatDatacard({ character, onUpdate }: { character: Character; onUpdate: (key: string, value: any) => void }) {
   const c = character;
   const equippedWeapons = (c.equippedWeapons as any[]) || [];
@@ -273,23 +326,33 @@ function CombatDatacard({ character, onUpdate }: { character: Character; onUpdat
       <ResourceTracker label={<RulesTooltip ruleKey="seele">Seele</RulesTooltip>} testId="seele" current={c.seeleCurrent ?? 0} max={seeleMax} onChange={v => onUpdate("seeleCurrent", v)} icon={Sparkles} />
       <DatacardWoundBar wounds={c.woundsCurrent ?? 0} onChange={v => onUpdate("woundsCurrent", v)} />
 
+      <CollapsibleSection title="Skulk" icon={EyeOff} testId="section-combat-skulk">
+        <SkulkBar character={c} onUpdate={onUpdate} rollDice={rollDice} />
+      </CollapsibleSection>
+
       <CollapsibleSection title="Weapons" icon={Swords} testId="section-weapons">
         <div className="space-y-2">
-          {equippedWeapons.map((w: any, i: number) => (
-            <div key={i} className="flex items-center justify-between gap-2 p-2 bg-secondary/20 rounded" data-testid={`combat-weapon-${i}`}>
-              <div>
-                <span className="text-sm font-semibold">{w.name}</span>
-                <div className="flex gap-2 text-xs text-muted-foreground mt-0.5">
-                  <span><RulesTooltip ruleKey="weaponAttack">ATK:</RulesTooltip> {getWeaponAttack(c, w)}</span>
-                  <span><RulesTooltip ruleKey="weaponDamage">DMG:</RulesTooltip> {w.normalDamage}/{w.critDamage}</span>
-                  <span>{w.damageType}</span>
+          {equippedWeapons.map((w: any, i: number) => {
+            const hasSilent = !!(w.effects && w.effects.toLowerCase().includes("silent"));
+            return (
+              <div key={i} className="flex items-center justify-between gap-2 p-2 bg-secondary/20 rounded" data-testid={`combat-weapon-${i}`}>
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-sm font-semibold">{w.name}</span>
+                    {hasSilent && <Badge variant="outline" className="text-[10px] border-indigo-500/50 text-indigo-400"><EyeOff className="w-2.5 h-2.5 mr-0.5" />Silent</Badge>}
+                  </div>
+                  <div className="flex gap-2 text-xs text-muted-foreground mt-0.5">
+                    <span><RulesTooltip ruleKey="weaponAttack">ATK:</RulesTooltip> {getWeaponAttack(c, w)}</span>
+                    <span><RulesTooltip ruleKey="weaponDamage">DMG:</RulesTooltip> {w.normalDamage}/{w.critDamage}</span>
+                    <span>{w.damageType}</span>
+                  </div>
                 </div>
+                <Button size="icon" variant="ghost" onClick={() => rollDice({ poolSize: getWeaponAttack(c, w), label: `${w.name} Attack`, rollType: "weapon", effects: w.effects ? [w.effects] : [], damageInfo: { normalDamage: w.normalDamage, critDamage: w.critDamage, damageType: w.damageType }, isSilent: hasSilent, skulkAvailable: c.skulkCurrent ?? 0 })} data-testid={`button-roll-weapon-${i}`}>
+                  <Dices className="w-3 h-3" />
+                </Button>
               </div>
-              <Button size="icon" variant="ghost" onClick={() => rollDice({ poolSize: getWeaponAttack(c, w), label: `${w.name} Attack`, rollType: "weapon", effects: w.effects ? [w.effects] : [], damageInfo: { normalDamage: w.normalDamage, critDamage: w.critDamage, damageType: w.damageType } })} data-testid={`button-roll-weapon-${i}`}>
-                <Dices className="w-3 h-3" />
-              </Button>
-            </div>
-          ))}
+            );
+          })}
           {equippedWeapons.length === 0 && <p className="text-xs text-muted-foreground italic text-center py-2">No weapons equipped.</p>}
         </div>
       </CollapsibleSection>
@@ -318,7 +381,8 @@ function CombatDatacard({ character, onUpdate }: { character: Character; onUpdat
                         disabled={(c.seeleCurrent ?? 0) < (lang.difficulty ?? 0)}
                         onClick={() => {
                           onUpdate("seeleCurrent", (c.seeleCurrent ?? 0) - (lang.difficulty || 0));
-                          rollDice({ poolSize: getSpellCast(c, lang), label: `Cast ${lname}`, rollType: "spell", effects: lang.tags ? [lang.tags] : [], damageInfo: lang.damage ? { languageDamage: lang.damage } : undefined });
+                          const hasSilent = !!(lang.tags && lang.tags.toLowerCase().includes("silent"));
+                          rollDice({ poolSize: getSpellCast(c, lang), label: `Cast ${lname}`, rollType: "spell", effects: lang.tags ? [lang.tags] : [], damageInfo: lang.damage ? { languageDamage: lang.damage } : undefined, isSilent: hasSilent, skulkAvailable: c.skulkCurrent ?? 0 });
                         }}
                         data-testid={`button-roll-spell-${lname}`}
                         className={(c.seeleCurrent ?? 0) < (lang.difficulty ?? 0) ? "text-destructive" : ""}
@@ -411,6 +475,10 @@ function RoleplayDatacard({ character, onUpdate }: { character: Character; onUpd
         </div>
       </div>
 
+      <CollapsibleSection title="Skulk" icon={EyeOff} testId="section-rp-skulk">
+        <SkulkBar character={c} onUpdate={onUpdate} rollDice={rollDice} />
+      </CollapsibleSection>
+
       <CollapsibleSection title="Skills" icon={BookOpen} testId="section-rp-skills">
         <SkillsSection character={c} rollDice={rollDice} />
       </CollapsibleSection>
@@ -429,7 +497,10 @@ function RoleplayDatacard({ character, onUpdate }: { character: Character; onUpd
                   <div className="flex items-center gap-1">
                     {lang && <span className="text-xs font-mono"><RulesTooltip ruleKey="spellCast">Cast:</RulesTooltip> {getSpellCast(c, lang)}</span>}
                     {lang && (
-                      <Button size="icon" variant="ghost" onClick={() => rollDice({ poolSize: getSpellCast(c, lang), label: `Cast ${lname}`, rollType: "spell", effects: lang.tags ? [lang.tags] : [], damageInfo: lang.damage ? { languageDamage: lang.damage } : undefined })} data-testid={`button-roll-spell-${lname}`}>
+                      <Button size="icon" variant="ghost" onClick={() => {
+                        const hasSilent = !!(lang.tags && lang.tags.toLowerCase().includes("silent"));
+                        rollDice({ poolSize: getSpellCast(c, lang), label: `Cast ${lname}`, rollType: "spell", effects: lang.tags ? [lang.tags] : [], damageInfo: lang.damage ? { languageDamage: lang.damage } : undefined, isSilent: hasSilent, skulkAvailable: c.skulkCurrent ?? 0 });
+                      }} data-testid={`button-roll-spell-${lname}`}>
                         <Dices className="w-3 h-3" />
                       </Button>
                     )}
@@ -475,6 +546,20 @@ export default function DatacardPage() {
   const id = parseInt(params.id || "0");
   const { data: character, isLoading } = useCharacter(id);
   const updateMut = useUpdateCharacter(id);
+  const { onSkulkSpent } = useDiceRoller();
+
+  const handleUpdate = useCallback((key: string, value: any) => {
+    updateMut.mutate({ [key]: value });
+  }, [updateMut]);
+
+  useEffect(() => {
+    onSkulkSpent.current = (amount: number) => {
+      if (!character) return;
+      const newCurrent = Math.max(0, (character.skulkCurrent ?? 0) - amount);
+      updateMut.mutate({ skulkCurrent: newCurrent });
+    };
+    return () => { onSkulkSpent.current = null; };
+  }, [onSkulkSpent, character, updateMut]);
 
   if (isLoading || !character) {
     return (
@@ -483,10 +568,6 @@ export default function DatacardPage() {
       </div>
     );
   }
-
-  const handleUpdate = (key: string, value: any) => {
-    updateMut.mutate({ [key]: value });
-  };
 
   return (
     <div className="min-h-screen p-3 md:p-6">

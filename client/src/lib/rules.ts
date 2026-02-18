@@ -113,10 +113,10 @@ export const RULES: Record<string, RuleEntry> = {
   },
   skulk: {
     title: "Skulk",
-    category: "Combat Stat",
-    formula: "Reflexes + Skullduggery skill tier",
-    description: "Your stealth capability. Roll Skulk when obscured or undetected.",
-    usage: "Successes determine how many times you can make noise or cross enemy line of sight before being detected. Enemy Seek can shred this value.",
+    category: "Resource",
+    formula: "Roll pool: Reflexes + Skullduggery skill tier",
+    description: "Your stealth health. Roll your Skulk pool to establish how stealthy you are - net successes become your Skulk HP.",
+    usage: "Skulk HP depletes as you make noise or are spotted. Weapons/spells with the Silent property let you spend Skulk to add bonus sneak attack dice. Enemy Seek can shred this value.",
   },
   woundscale: {
     title: "Woundscale",

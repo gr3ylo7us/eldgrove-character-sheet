@@ -724,14 +724,26 @@ export default function CreateCharacter() {
       return skillName && selectedSkillNames.has(skillName);
     });
 
+    const martialArtNames = martialArtsFeats.map(f => f.name.replace(/^Martial Art:\s*/i, ""));
+
+    const getManeuverRequiredFeat = (m: { name: string; prerequisite?: string | null }) => {
+      if (m.prerequisite && m.prerequisite.trim() !== "") return m.prerequisite;
+      for (const artName of martialArtNames) {
+        if (m.name.startsWith(artName + ":")) return `Martial Art: ${artName}`;
+      }
+      return null;
+    };
+
     const eligibleManeuvers = allManeuvers?.filter(m => {
-      if (!m.prerequisite || m.prerequisite.trim() === "") return true;
-      return selectedFeats.includes(m.prerequisite);
+      const req = getManeuverRequiredFeat(m);
+      if (!req) return true;
+      return selectedFeats.includes(req);
     }) || [];
 
     const lockedManeuvers = allManeuvers?.filter(m => {
-      if (!m.prerequisite || m.prerequisite.trim() === "") return false;
-      return !selectedFeats.includes(m.prerequisite);
+      const req = getManeuverRequiredFeat(m);
+      if (!req) return false;
+      return !selectedFeats.includes(req);
     }) || [];
 
     return (
@@ -836,15 +848,18 @@ export default function CreateCharacter() {
             {lockedManeuvers.length > 0 && (
               <div className="mt-2 pt-2 border-t border-border/30">
                 <p className="text-[10px] text-muted-foreground flex items-center gap-1 mb-1"><Lock className="w-3 h-3" /> Locked maneuvers (need prerequisite martial art feat)</p>
-                {lockedManeuvers.map(m => (
+                {lockedManeuvers.map(m => {
+                  const reqFeat = getManeuverRequiredFeat(m);
+                  return (
                   <div key={m.name} className="flex items-start gap-2 text-xs bg-secondary/10 rounded px-2 py-1 opacity-50">
                     <Lock className="w-3 h-3 mt-0.5 shrink-0" />
                     <div>
                       <span className="font-semibold">{m.name}</span>
-                      <Badge variant="outline" className="text-[10px] ml-1">Req: {m.prerequisite}</Badge>
+                      {reqFeat && <Badge variant="outline" className="text-[10px] ml-1">Req: {reqFeat}</Badge>}
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </CollapsibleContent>

@@ -107,6 +107,7 @@ export async function setupAuth(app: Express) {
       passport.authenticate("google", { failureRedirect: "/?error=auth_failed" }),
       (req: any, res) => {
         req.session.userId = req.user.id;
+        console.log(`[Auth] User logged in: id=${req.user.id} email=${req.user.email}`);
         req.session.save(() => {
           res.redirect("/");
         });
@@ -157,6 +158,10 @@ export const isAuthenticated: RequestHandler = (req, res, next) => {
 export const hasPaidAccess: RequestHandler = async (req: any, res, next) => {
   if (!req.session.userId) {
     return res.status(401).json({ message: "Unauthorized" });
+  }
+  // Admin IDs always have access
+  if (ADMIN_USER_IDS.includes(req.session.userId)) {
+    return next();
   }
   const user = await authStorage.getUser(req.session.userId);
   if (!user || user.accessTier === "free") {

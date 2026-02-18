@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   ArrowLeft, Save, Swords, BookOpen, Shield, Scroll, Sparkles,
@@ -538,9 +538,18 @@ export default function CharacterSheetPage() {
                     <SelectValue placeholder="Add archetype..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {allArchetypes?.filter(a => !selectedArchetypes.some(sa => sa.name === a.name)).map(a => (
-                      <SelectItem key={a.id} value={a.name}>{a.name} ({a.tier})</SelectItem>
-                    ))}
+                    {["Initiate", "Acolyte", "Scholar"].map(tier => {
+                      const tierArchetypes = allArchetypes?.filter(a => a.tier === tier && !selectedArchetypes.some(sa => sa.name === a.name)) || [];
+                      if (tierArchetypes.length === 0) return null;
+                      return (
+                        <SelectGroup key={tier}>
+                          <SelectLabel className="text-xs font-semibold text-primary/70 uppercase tracking-wider">{tier}</SelectLabel>
+                          {tierArchetypes.map(a => (
+                            <SelectItem key={a.id} value={a.name}>{a.name}</SelectItem>
+                          ))}
+                        </SelectGroup>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
               </div>

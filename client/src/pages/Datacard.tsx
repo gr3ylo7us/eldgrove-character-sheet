@@ -4,7 +4,8 @@ import { useLanguages, useFeats, useManeuvers } from "@/hooks/use-game-data";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Swords, BookOpen, Shield, Heart, Zap, Sparkles, Minus, Plus } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, Swords, BookOpen, Shield, Heart, Zap, Sparkles, Minus, Plus, Activity } from "lucide-react";
 import { STAT_LABELS, getReflexes, getSeek, getNerve, getHealth, getWill, getAptitude, getMove, getEvade, getSkulk, getSeeleMax, getWeaponAttack, getSpellCast, getWoundscaleThreshold } from "@/lib/formulas";
 import type { Character } from "@shared/schema";
 
@@ -36,6 +37,78 @@ function ResourceTracker({ label, current, max, onChange, icon }: { label: strin
   );
 }
 
+const WOUNDSCALE_STAGES = [
+  { label: "Uninjured", max: 0, color: "bg-emerald-600" },
+  { label: "Superficial", max: 5, color: "bg-emerald-500" },
+  { label: "Light", max: 10, color: "bg-yellow-500" },
+  { label: "Moderate", max: 15, color: "bg-amber-500" },
+  { label: "Severe", max: 20, color: "bg-orange-500" },
+  { label: "Critical", max: 25, color: "bg-red-500" },
+  { label: "Mortal", max: 28, color: "bg-red-700" },
+  { label: "Death's Door", max: 30, color: "bg-red-900" },
+];
+
+function DatacardWoundBar({ wounds, onChange }: { wounds: number; onChange: (v: number) => void }) {
+  const maxWounds = 30;
+  const safeMax = Math.max(maxWounds, 1);
+  const currentStage = getWoundscaleThreshold(wounds);
+  const percentage = Math.min((wounds / safeMax) * 100, 100);
+
+  const activeStage = WOUNDSCALE_STAGES.find((s, i) => {
+    const next = WOUNDSCALE_STAGES[i + 1];
+    if (!next) return true;
+    return wounds <= s.max;
+  }) || WOUNDSCALE_STAGES[WOUNDSCALE_STAGES.length - 1];
+
+  return (
+    <div className="space-y-2" data-testid="datacard-wound-bar">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <Activity className="w-4 h-4 text-red-400" />
+          <span className="text-xs font-mono text-muted-foreground uppercase">Woundscale</span>
+        </div>
+        <Badge variant="outline" className="text-xs" data-testid="datacard-wound-stage">{currentStage}</Badge>
+      </div>
+      <div className="relative h-5 bg-secondary/60 rounded overflow-hidden border border-border/30">
+        <div
+          className={`absolute inset-y-0 left-0 transition-all duration-300 ${activeStage.color}`}
+          style={{ width: `${percentage}%` }}
+        />
+        <div className="absolute inset-0 flex">
+          {WOUNDSCALE_STAGES.slice(1).map((stage) => (
+            <div
+              key={stage.label}
+              className="border-r border-background/30 h-full"
+              style={{ width: `${((stage.max - (WOUNDSCALE_STAGES[WOUNDSCALE_STAGES.indexOf(stage) - 1]?.max || 0)) / safeMax) * 100}%` }}
+              title={stage.label}
+            />
+          ))}
+        </div>
+      </div>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1">
+          <Button size="icon" variant="ghost" onClick={() => onChange(Math.max(0, wounds - 1))} data-testid="button-datacard-wound-dec">
+            <Minus className="w-3 h-3" />
+          </Button>
+          <span className="text-sm font-bold w-8 text-center">{wounds}</span>
+          <Button size="icon" variant="ghost" onClick={() => onChange(Math.min(maxWounds, wounds + 1))} data-testid="button-datacard-wound-inc">
+            <Plus className="w-3 h-3" />
+          </Button>
+        </div>
+        <div className="flex gap-1">
+          {WOUNDSCALE_STAGES.slice(1, -1).map((s) => (
+            <div
+              key={s.label}
+              className={`w-2 h-2 rounded-full ${wounds > s.max ? 'opacity-100' : 'opacity-20'} ${s.color}`}
+              title={s.label}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function CombatDatacard({ character, onUpdate }: { character: Character; onUpdate: (key: string, value: any) => void }) {
   const c = character;
   const equippedWeapons = (c.equippedWeapons as any[]) || [];
@@ -55,17 +128,9 @@ function CombatDatacard({ character, onUpdate }: { character: Character; onUpdat
         ))}
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <ResourceTracker label="Seele" current={c.seeleCurrent ?? 0} max={seeleMax} onChange={v => onUpdate("seeleCurrent", v)} icon={Sparkles} />
-        <ResourceTracker label="Wounds" current={c.woundsCurrent ?? 0} max={getHealth(c) * 5} onChange={v => onUpdate("woundsCurrent", v)} icon={Heart} />
-      </div>
+      <ResourceTracker label="Seele" current={c.seeleCurrent ?? 0} max={seeleMax} onChange={v => onUpdate("seeleCurrent", v)} icon={Sparkles} />
 
-      <div className="flex items-center justify-center gap-2 py-1">
-        <span className="text-xs text-muted-foreground font-mono">Status:</span>
-        <span className={`text-sm font-bold ${woundscale === "Uninjured" ? "text-green-400" : woundscale === "Critical" || woundscale === "Mortal" || woundscale === "Death's Door" ? "text-destructive" : "text-yellow-500"}`}>
-          {woundscale}
-        </span>
-      </div>
+      <DatacardWoundBar wounds={c.woundsCurrent ?? 0} onChange={v => onUpdate("woundsCurrent", v)} />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-center">
         <Card className="p-2"><span className="text-[10px] text-muted-foreground font-mono">EVADE</span><div className="text-lg font-bold">{getEvade(c)}</div></Card>

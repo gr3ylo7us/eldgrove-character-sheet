@@ -288,6 +288,7 @@ export async function seedDatabase() {
   const existingChars = await db.select().from(characters);
   if (existingChars.length === 0) {
     await db.insert(characters).values({
+      userId: "local-dev-user",
       name: "Ashren Voss",
       race: "Human",
       archetype: "Mage",

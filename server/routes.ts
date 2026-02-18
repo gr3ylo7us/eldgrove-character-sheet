@@ -1,38 +1,47 @@
+import express from "express";
 import type { Express } from "express";
 import type { Server } from "http";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import { seedDatabase } from "./seed";
-import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
+import { setupAuth, registerAuthRoutes, isAuthenticated, hasPaidAccess } from "./replit_integrations/auth";
+import { registerStripeRoutes } from "./stripe";
+import { registerPatreonRoutes } from "./patreon";
 
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
 
+  // Stripe webhook needs raw body — register BEFORE express.json()
+  app.use("/api/webhooks/stripe", express.raw({ type: "application/json" }));
+
   await setupAuth(app);
   registerAuthRoutes(app);
+  registerStripeRoutes(app);
+  registerPatreonRoutes(app);
 
   await seedDatabase();
 
-  app.get(api.characters.list.path, isAuthenticated, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+  // Character routes — require paid access
+  app.get(api.characters.list.path, hasPaidAccess, async (req: any, res) => {
+    const userId = req.session.userId;
     res.json(await storage.getCharactersByUser(userId));
   });
 
-  app.get(api.characters.get.path, isAuthenticated, async (req: any, res) => {
+  app.get(api.characters.get.path, hasPaidAccess, async (req: any, res) => {
     const id = parseInt(req.params.id);
     if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
-    const userId = req.user.claims.sub;
+    const userId = req.session.userId;
     const char = await storage.getCharacterForUser(id, userId);
     if (!char) return res.status(404).json({ message: "Character not found" });
     res.json(char);
   });
 
-  app.post(api.characters.create.path, isAuthenticated, async (req: any, res) => {
+  app.post(api.characters.create.path, hasPaidAccess, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const data = api.characters.create.input.parse(req.body);
       const char = await storage.createCharacter({ ...data, userId });
       res.status(201).json(char);
@@ -42,10 +51,10 @@ export async function registerRoutes(
     }
   });
 
-  app.put(api.characters.update.path, isAuthenticated, async (req: any, res) => {
+  app.put(api.characters.update.path, hasPaidAccess, async (req: any, res) => {
     const id = parseInt(req.params.id);
     if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
-    const userId = req.user.claims.sub;
+    const userId = req.session.userId;
     try {
       const data = api.characters.update.input.parse(req.body);
       const updated = await storage.updateCharacterForUser(id, userId, data);
@@ -57,14 +66,15 @@ export async function registerRoutes(
     }
   });
 
-  app.delete(api.characters.delete.path, isAuthenticated, async (req: any, res) => {
+  app.delete(api.characters.delete.path, hasPaidAccess, async (req: any, res) => {
     const id = parseInt(req.params.id);
     if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
-    const userId = req.user.claims.sub;
+    const userId = req.session.userId;
     await storage.deleteCharacterForUser(id, userId);
     res.status(204).send();
   });
 
+  // Game data routes — public (needed for Compendium)
   app.get(api.data.weapons.path, async (_req, res) => res.json(await storage.getWeapons()));
   app.get(api.data.armor.path, async (_req, res) => res.json(await storage.getArmor()));
   app.get(api.data.items.path, async (_req, res) => res.json(await storage.getItems()));

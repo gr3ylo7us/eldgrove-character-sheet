@@ -32,12 +32,12 @@ export class DatabaseStorage implements IStorage {
     return c;
   }
   async createCharacter(data: InsertCharacter) {
-    const [c] = await db.insert(characters).values(data).returning();
-    return c;
+    const result = await db.insert(characters).values(data).returning();
+    return result[0];
   }
   async updateCharacterForUser(id: number, userId: string, data: Partial<InsertCharacter>) {
-    const [c] = await db.update(characters).set(data).where(and(eq(characters.id, id), eq(characters.userId, userId))).returning();
-    return c;
+    const result = await db.update(characters).set(data).where(and(eq(characters.id, id), eq(characters.userId, userId))).returning();
+    return result[0];
   }
   async deleteCharacterForUser(id: number, userId: string) {
     await db.delete(characters).where(and(eq(characters.id, id), eq(characters.userId, userId)));

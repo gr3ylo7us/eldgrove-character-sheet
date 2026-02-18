@@ -1,12 +1,12 @@
-import { pgTable, text, serial, integer, boolean, jsonb, varchar } from "drizzle-orm/pg-core";
+import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 export * from "./models/auth";
 
-export const characters = pgTable("characters", {
-  id: serial("id").primaryKey(),
-  userId: varchar("user_id"),
+export const characters = sqliteTable("characters", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: text("user_id"),
   name: text("name").notNull(),
   race: text("race").default(""),
   archetype: text("archetype").default(""),
@@ -36,19 +36,19 @@ export const characters = pgTable("characters", {
   armorEvasionDice: integer("armor_evasion_dice").default(1),
   armorEffects: text("armor_effects").default(""),
 
-  skillTiers: jsonb("skill_tiers").default({}),
-  equippedWeapons: jsonb("equipped_weapons").default([]),
-  knownLanguages: jsonb("known_languages").default([]),
-  knownFeats: jsonb("known_feats").default([]),
-  knownManeuvers: jsonb("known_maneuvers").default([]),
-  inventory: jsonb("inventory").default([]),
-  archetypeFeatures: jsonb("archetype_features").default([]),
-  selectedArchetypes: jsonb("selected_archetypes").default([]),
+  skillTiers: text("skill_tiers", { mode: "json" }).default({}),
+  equippedWeapons: text("equipped_weapons", { mode: "json" }).default([]),
+  knownLanguages: text("known_languages", { mode: "json" }).default([]),
+  knownFeats: text("known_feats", { mode: "json" }).default([]),
+  knownManeuvers: text("known_maneuvers", { mode: "json" }).default([]),
+  inventory: text("inventory", { mode: "json" }).default([]),
+  archetypeFeatures: text("archetype_features", { mode: "json" }).default([]),
+  selectedArchetypes: text("selected_archetypes", { mode: "json" }).default([]),
   notes: text("notes").default(""),
 });
 
-export const weapons = pgTable("weapons", {
-  id: serial("id").primaryKey(),
+export const weapons = sqliteTable("weapons", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
   type: text("type"),
   dice: integer("dice").default(0),
@@ -64,16 +64,16 @@ export const weapons = pgTable("weapons", {
   keywordEffect: text("keyword_effect"),
 });
 
-export const armor = pgTable("armor", {
-  id: serial("id").primaryKey(),
+export const armor = sqliteTable("armor", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
   protection: integer("protection").default(0),
   evasionDice: integer("evasion_dice").default(1),
   effects: text("effects"),
 });
 
-export const items = pgTable("items", {
-  id: serial("id").primaryKey(),
+export const items = sqliteTable("items", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
   rarity: integer("rarity").default(0),
   bonuses: text("bonuses"),
@@ -83,8 +83,8 @@ export const items = pgTable("items", {
   usageDice: text("usage_dice"),
 });
 
-export const skills = pgTable("skills", {
-  id: serial("id").primaryKey(),
+export const skills = sqliteTable("skills", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
   stat: text("stat"),
   category: text("category"),
@@ -92,31 +92,31 @@ export const skills = pgTable("skills", {
   overview: text("overview"),
 });
 
-export const archetypes = pgTable("archetypes", {
-  id: serial("id").primaryKey(),
+export const archetypes = sqliteTable("archetypes", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
   tier: text("tier"),
-  features: jsonb("features").default([]),
+  features: text("features", { mode: "json" }).default([]),
 });
 
-export const feats = pgTable("feats", {
-  id: serial("id").primaryKey(),
+export const feats = sqliteTable("feats", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
   effect: text("effect"),
   featType: text("feat_type"),
   prerequisites: text("prerequisites"),
 });
 
-export const maneuvers = pgTable("maneuvers", {
-  id: serial("id").primaryKey(),
+export const maneuvers = sqliteTable("maneuvers", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
   effect: text("effect"),
   seeleCost: text("seele_cost"),
   prerequisite: text("prerequisite"),
 });
 
-export const languages = pgTable("languages", {
-  id: serial("id").primaryKey(),
+export const languages = sqliteTable("languages", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
   domain: text("domain"),
   effect: text("effect"),
@@ -124,11 +124,11 @@ export const languages = pgTable("languages", {
   difficulty: integer("difficulty").default(3),
   tags: text("tags"),
   damage: text("damage"),
-  counters: jsonb("counters").default({}),
+  counters: text("counters", { mode: "json" }).default({}),
 });
 
-export const levelingTable = pgTable("leveling_table", {
-  id: serial("id").primaryKey(),
+export const levelingTable = sqliteTable("leveling_table", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   level: text("level").notNull(),
   bonuses: text("bonuses"),
 });

@@ -1,5 +1,5 @@
 import session from "express-session";
-import passport from "passport";
+import * as passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import type { Express, RequestHandler } from "express";
 import createMemoryStore from "memorystore";
@@ -52,10 +52,24 @@ export async function setupAuth(app: Express) {
 
   if (clientID && clientSecret) {
     // === PRODUCTION: Google OAuth ===
+    const appUrl = process.env.APP_URL || "";
+    const resolvedCallbackURL = callbackURL?.startsWith("http")
+      ? callbackURL
+      : `${appUrl}/api/auth/google/callback`;
+
+    console.log("[Auth] Google OAuth config:", {
+      clientID: clientID.substring(0, 10) + "...",
+      callbackURL: resolvedCallbackURL,
+    });
+
     passport.use(
       new GoogleStrategy(
-        { clientID, clientSecret, callbackURL },
-        async (_accessToken, _refreshToken, profile, done) => {
+        {
+          clientID,
+          clientSecret,
+          callbackURL: resolvedCallbackURL,
+        },
+        async (_accessToken: string, _refreshToken: string, profile: any, done: any) => {
           try {
             const email = profile.emails?.[0]?.value;
             const user = await authStorage.upsertUser({
@@ -79,7 +93,11 @@ export async function setupAuth(app: Express) {
     // Google sign-in entry point
     app.get(
       "/api/login",
-      passport.authenticate("google", { scope: ["profile", "email"] })
+      passport.authenticate("google", {
+        scope: ["profile", "email"],
+        accessType: "offline",
+        prompt: "consent",
+      })
     );
 
     // Google callback

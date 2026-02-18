@@ -1,13 +1,16 @@
 import { useCharacters, useDeleteCharacter } from "@/hooks/use-characters";
+import { useAuth } from "@/hooks/use-auth";
 import { Link } from "wouter";
-import { Scroll, Plus, Trash2, Shield, Swords } from "lucide-react";
+import { Scroll, Plus, Trash2, Shield, Swords, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { STAT_LABELS, getWoundscaleThreshold } from "@/lib/formulas";
 
 export default function Home() {
   const { data: characters, isLoading } = useCharacters();
   const deleteMut = useDeleteCharacter();
+  const { user } = useAuth();
 
   if (isLoading) {
     return (
@@ -20,6 +23,9 @@ export default function Home() {
     );
   }
 
+  const displayName = [user?.firstName, user?.lastName].filter(Boolean).join(" ") || user?.email || "Traveler";
+  const initials = displayName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+
   return (
     <div className="min-h-screen p-4 md:p-8">
       <div className="max-w-6xl mx-auto space-y-8">
@@ -30,7 +36,16 @@ export default function Home() {
             </h1>
             <p className="text-muted-foreground italic text-lg">"Heroes get remembered, but legends never die."</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-2 mr-2" data-testid="user-profile-info">
+              <Avatar className="w-8 h-8">
+                <AvatarImage src={user?.profileImageUrl ?? undefined} alt={displayName} />
+                <AvatarFallback className="text-xs bg-primary/20 text-primary">{initials}</AvatarFallback>
+              </Avatar>
+              <span className="text-sm text-foreground/80 hidden sm:inline" style={{ fontFamily: "var(--font-body)" }}>
+                {displayName}
+              </span>
+            </div>
             <Link href="/compendium">
               <Button variant="outline" data-testid="link-compendium">
                 <Scroll className="w-4 h-4 mr-2" /> Compendium
@@ -39,6 +54,11 @@ export default function Home() {
             <Link href="/create">
               <Button data-testid="button-create-character"><Plus className="w-4 h-4 mr-2" /> New Character</Button>
             </Link>
+            <a href="/api/logout">
+              <Button variant="ghost" size="icon" data-testid="button-logout">
+                <LogOut className="w-4 h-4" />
+              </Button>
+            </a>
           </div>
         </header>
 

@@ -1,9 +1,12 @@
-import { pgTable, text, serial, integer, boolean, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, jsonb, varchar } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+export * from "./models/auth";
+
 export const characters = pgTable("characters", {
   id: serial("id").primaryKey(),
+  userId: varchar("user_id"),
   name: text("name").notNull(),
   race: text("race").default(""),
   archetype: text("archetype").default(""),

@@ -4,30 +4,37 @@ import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import { seedDatabase } from "./seed";
+import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
 
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
 
+  await setupAuth(app);
+  registerAuthRoutes(app);
+
   await seedDatabase();
 
-  app.get(api.characters.list.path, async (_req, res) => {
-    res.json(await storage.getCharacters());
+  app.get(api.characters.list.path, isAuthenticated, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    res.json(await storage.getCharactersByUser(userId));
   });
 
-  app.get(api.characters.get.path, async (req, res) => {
+  app.get(api.characters.get.path, isAuthenticated, async (req: any, res) => {
     const id = parseInt(req.params.id);
     if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
-    const char = await storage.getCharacter(id);
+    const userId = req.user.claims.sub;
+    const char = await storage.getCharacterForUser(id, userId);
     if (!char) return res.status(404).json({ message: "Character not found" });
     res.json(char);
   });
 
-  app.post(api.characters.create.path, async (req, res) => {
+  app.post(api.characters.create.path, isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user.claims.sub;
       const data = api.characters.create.input.parse(req.body);
-      const char = await storage.createCharacter(data);
+      const char = await storage.createCharacter({ ...data, userId });
       res.status(201).json(char);
     } catch (e) {
       if (e instanceof z.ZodError) return res.status(400).json({ message: e.errors[0].message });
@@ -35,12 +42,13 @@ export async function registerRoutes(
     }
   });
 
-  app.put(api.characters.update.path, async (req, res) => {
+  app.put(api.characters.update.path, isAuthenticated, async (req: any, res) => {
     const id = parseInt(req.params.id);
     if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+    const userId = req.user.claims.sub;
     try {
       const data = api.characters.update.input.parse(req.body);
-      const updated = await storage.updateCharacter(id, data);
+      const updated = await storage.updateCharacterForUser(id, userId, data);
       if (!updated) return res.status(404).json({ message: "Character not found" });
       res.json(updated);
     } catch (e) {
@@ -49,10 +57,11 @@ export async function registerRoutes(
     }
   });
 
-  app.delete(api.characters.delete.path, async (req, res) => {
+  app.delete(api.characters.delete.path, isAuthenticated, async (req: any, res) => {
     const id = parseInt(req.params.id);
     if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
-    await storage.deleteCharacter(id);
+    const userId = req.user.claims.sub;
+    await storage.deleteCharacterForUser(id, userId);
     res.status(204).send();
   });
 

@@ -4,14 +4,14 @@ import {
   type Skill, type Archetype, type Feat, type Maneuver, type Language, type LevelingEntry
 } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
 export interface IStorage {
-  getCharacters(): Promise<Character[]>;
-  getCharacter(id: number): Promise<Character | undefined>;
+  getCharactersByUser(userId: string): Promise<Character[]>;
+  getCharacterForUser(id: number, userId: string): Promise<Character | undefined>;
   createCharacter(character: InsertCharacter): Promise<Character>;
-  updateCharacter(id: number, character: Partial<InsertCharacter>): Promise<Character>;
-  deleteCharacter(id: number): Promise<void>;
+  updateCharacterForUser(id: number, userId: string, character: Partial<InsertCharacter>): Promise<Character | undefined>;
+  deleteCharacterForUser(id: number, userId: string): Promise<void>;
   getWeapons(): Promise<Weapon[]>;
   getArmor(): Promise<Armor[]>;
   getItems(): Promise<Item[]>;
@@ -24,21 +24,23 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  async getCharacters() { return db.select().from(characters); }
-  async getCharacter(id: number) {
-    const [c] = await db.select().from(characters).where(eq(characters.id, id));
+  async getCharactersByUser(userId: string) {
+    return db.select().from(characters).where(eq(characters.userId, userId));
+  }
+  async getCharacterForUser(id: number, userId: string) {
+    const [c] = await db.select().from(characters).where(and(eq(characters.id, id), eq(characters.userId, userId)));
     return c;
   }
   async createCharacter(data: InsertCharacter) {
     const [c] = await db.insert(characters).values(data).returning();
     return c;
   }
-  async updateCharacter(id: number, data: Partial<InsertCharacter>) {
-    const [c] = await db.update(characters).set(data).where(eq(characters.id, id)).returning();
+  async updateCharacterForUser(id: number, userId: string, data: Partial<InsertCharacter>) {
+    const [c] = await db.update(characters).set(data).where(and(eq(characters.id, id), eq(characters.userId, userId))).returning();
     return c;
   }
-  async deleteCharacter(id: number) {
-    await db.delete(characters).where(eq(characters.id, id));
+  async deleteCharacterForUser(id: number, userId: string) {
+    await db.delete(characters).where(and(eq(characters.id, id), eq(characters.userId, userId)));
   }
   async getWeapons() {
     const validTypes = ['Melee Weapon', 'Blackpowder Weapon', 'Projectile Weapon', 'Explosive Weapon', 'Natural Weapon'];

@@ -6,8 +6,10 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { BookOpen, Dices } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
+import Landing from "@/pages/Landing";
 import CreateCharacter from "@/pages/CreateCharacter";
 import CharacterSheet from "@/pages/CharacterSheet";
 import Datacard from "@/pages/Datacard";
@@ -15,14 +17,41 @@ import Compendium from "@/pages/Compendium";
 import { CompendiumDrawer } from "@/components/CompendiumDrawer";
 import { DiceRollerProvider, useDiceRoller } from "@/components/DiceRoller";
 
-function Router() {
+function AuthRouter() {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center space-y-4 animate-pulse">
+          <div className="w-12 h-12 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-muted-foreground italic" style={{ fontFamily: "var(--font-display)" }}>
+            Consulting the archives...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <Switch>
+        <Route path="/" component={Landing} />
+        <Route path="/compendium" component={Compendium} />
+        <Route>
+          <Landing />
+        </Route>
+      </Switch>
+    );
+  }
+
   return (
     <Switch>
-      <Route path="/" component={Home}/>
-      <Route path="/create" component={CreateCharacter}/>
-      <Route path="/character/:id" component={CharacterSheet}/>
-      <Route path="/datacard/:id" component={Datacard}/>
-      <Route path="/compendium" component={Compendium}/>
+      <Route path="/" component={Home} />
+      <Route path="/create" component={CreateCharacter} />
+      <Route path="/character/:id" component={CharacterSheet} />
+      <Route path="/datacard/:id" component={Datacard} />
+      <Route path="/compendium" component={Compendium} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -31,6 +60,9 @@ function Router() {
 function FloatingButtons() {
   const [compendiumOpen, setCompendiumOpen] = useState(false);
   const { openRoller } = useDiceRoller();
+  const { user } = useAuth();
+
+  if (!user) return null;
 
   return (
     <>
@@ -64,7 +96,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <DiceRollerProvider>
-          <Router />
+          <AuthRouter />
           <FloatingButtons />
           <Toaster />
         </DiceRollerProvider>

@@ -1,12 +1,14 @@
 # Eldgrove Character Sheet
 
 ## Overview
-Web-based character sheet application for the "Eldgrove" TTRPG system. Displays character information in two main formats:
+Web-based character sheet application for the "Eldgrove" TTRPG system with multi-user support via Replit Auth (Google, GitHub, email login). Each user has their own private character collection.
+- **Landing Page**: Dark fantasy themed intro page for logged-out users with hero image, feature cards, and sign-in CTA
 - **Character Sheet**: Comprehensive view for editing all character details (stats, combat, skills, abilities, inventory)
 - **Datacards**: Streamlined Combat and Roleplay views for quick reference during gameplay
 - **Compendium**: Reference library for all game data (weapons, armor, items, skills, feats, maneuvers, languages, archetypes, leveling) with clickable detail dialogs
 
 ## Architecture
+- **Auth**: Replit Auth (OIDC) via passport + express-session with PostgreSQL session store
 - **Frontend**: React + TypeScript + Vite, TailwindCSS, shadcn/ui components
 - **Backend**: Express.js with Drizzle ORM
 - **Database**: PostgreSQL (Neon-backed via Replit)

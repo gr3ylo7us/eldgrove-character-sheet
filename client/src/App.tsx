@@ -5,13 +5,14 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
-import { BookOpen } from "lucide-react";
+import { BookOpen, Dices } from "lucide-react";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import CharacterSheet from "@/pages/CharacterSheet";
 import Datacard from "@/pages/Datacard";
 import Compendium from "@/pages/Compendium";
 import { CompendiumDrawer } from "@/components/CompendiumDrawer";
+import { DiceRollerProvider, useDiceRoller } from "@/components/DiceRoller";
 
 function Router() {
   return (
@@ -25,24 +26,46 @@ function Router() {
   );
 }
 
-function App() {
+function FloatingButtons() {
   const [compendiumOpen, setCompendiumOpen] = useState(false);
+  const { openRoller } = useDiceRoller();
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Router />
+    <>
+      <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
         <Button
           size="icon"
           variant="outline"
-          className="fixed bottom-4 right-4 z-50 rounded-full shadow-lg bg-background/90 backdrop-blur-sm border-primary/30"
+          className="rounded-full shadow-lg bg-background/90 backdrop-blur-sm border-primary/30"
+          onClick={openRoller}
+          data-testid="button-dice-fab"
+        >
+          <Dices className="w-5 h-5 text-primary" />
+        </Button>
+        <Button
+          size="icon"
+          variant="outline"
+          className="rounded-full shadow-lg bg-background/90 backdrop-blur-sm border-primary/30"
           onClick={() => setCompendiumOpen(true)}
           data-testid="button-compendium-fab"
         >
           <BookOpen className="w-5 h-5 text-primary" />
         </Button>
-        <CompendiumDrawer open={compendiumOpen} onOpenChange={setCompendiumOpen} />
-        <Toaster />
+      </div>
+      <CompendiumDrawer open={compendiumOpen} onOpenChange={setCompendiumOpen} />
+    </>
+  );
+}
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <DiceRollerProvider>
+          <Router />
+          <FloatingButtons />
+          <Toaster />
+        </DiceRollerProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

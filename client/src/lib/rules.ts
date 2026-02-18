@@ -86,30 +86,16 @@ export const RULES: Record<string, RuleEntry> = {
   nerve: {
     title: "Nerve",
     category: "Secondary Stat",
-    formula: "VIT + DIP + POW",
+    formula: "ACU + FIN + INT",
     description: "Your character's composure and ability to endure stress.",
     usage: "Determines resistance to fear, intimidation, and stressful situations.",
-  },
-  health: {
-    title: "Health",
-    category: "Secondary Stat",
-    formula: "VIT + POW",
-    description: "Your character's physical hardiness.",
-    usage: "Determines wound resistance and physical resilience.",
   },
   will: {
     title: "Will",
     category: "Secondary Stat",
-    formula: "DIP",
-    description: "Your character's mental fortitude.",
+    formula: "VIT + DIP + POW",
+    description: "Your character's mental fortitude and resilience.",
     usage: "Determines resistance to charm, compulsion, and mental effects.",
-  },
-  aptitude: {
-    title: "Aptitude",
-    category: "Secondary Stat",
-    formula: "ACU",
-    description: "Your character's intellectual capability.",
-    usage: "Determines learning speed and knowledge-based checks.",
   },
   move: {
     title: "Move",
@@ -155,15 +141,15 @@ export const RULES: Record<string, RuleEntry> = {
   spellCast: {
     title: "Spell Cast",
     category: "Magic",
-    formula: "Arcane Mastery + Language Difficulty",
-    description: "The number of d20s rolled when casting a spell using this Language. Difficulty is also the Seele cost to cast.",
-    usage: "Pay the Difficulty as Seele cost, then roll CAST dice. Successes determine spell effectiveness.",
+    formula: "Arcane Mastery + Language Cost",
+    description: "The number of d20s rolled when casting a spell using this Language. Cost is also the Seele cost to cast.",
+    usage: "Pay the Cost as Seele, then roll CAST dice. Successes determine spell effectiveness.",
   },
   spellCost: {
-    title: "Spell Cost (Difficulty)",
+    title: "Spell Cost",
     category: "Magic",
     description: "The amount of Seele that must be spent to cast a spell using this Language.",
-    usage: "Deducted from your current Seele when casting. Higher difficulty languages are more powerful but costlier.",
+    usage: "Deducted from your current Seele when casting. Higher cost languages are more powerful but costlier.",
   },
 
   protection: {

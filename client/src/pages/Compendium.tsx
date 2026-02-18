@@ -155,7 +155,7 @@ function LanguageDetail({ data }: { data: Language }) {
   return (
     <div className="space-y-1" data-testid="detail-language">
       <InfoRow label="Domain" value={data.domain} />
-      <InfoRow label="Difficulty" value={data.difficulty} />
+      <InfoRow label="Cost" value={data.difficulty} />
       <InfoRow label="Damage" value={data.damage} />
       <InfoRow label="Tags" value={data.tags} />
       <InfoRow label="Commands" value={data.commands} />
@@ -348,21 +348,37 @@ export default function CompendiumPage() {
 
           <TabsContent value="maneuvers">
             <SearchInput value={search} onChange={setSearch} />
-            <div className="space-y-2">
-              {filter(maneuversList, ["name", "effect"]).map(m => (
-                <Card key={m.id} className="p-4 cursor-pointer hover-elevate" onClick={() => setDetail({ type: "maneuver", data: m })} data-testid={`comp-maneuver-${m.id}`}>
-                  <div className="flex justify-between items-start gap-2">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold">{m.name}</span>
-                      <ChevronRight className="w-3 h-3 text-muted-foreground/50" />
-                    </div>
-                    {m.seeleCost && <Badge variant="secondary" className="shrink-0">{m.seeleCost} Seele</Badge>}
+            {(() => {
+              const filtered = filter(maneuversList, ["name", "effect"]);
+              const grouped: Record<string, typeof filtered> = {};
+              for (const m of filtered) {
+                const colonIdx = m.name.indexOf(":");
+                const cat = colonIdx > 0 ? m.name.substring(0, colonIdx).trim() : "General";
+                if (!grouped[cat]) grouped[cat] = [];
+                grouped[cat].push(m);
+              }
+              const sortedKeys = Object.keys(grouped).sort((a, b) => a === "General" ? -1 : b === "General" ? 1 : a.localeCompare(b));
+              return sortedKeys.map(cat => (
+                <div key={cat} className="mb-6">
+                  <h3 className="text-lg font-semibold text-primary mb-3" style={{ fontFamily: "var(--font-display)" }}>{cat === "General" ? "General Maneuvers" : cat}</h3>
+                  <div className="space-y-2">
+                    {grouped[cat].map(m => (
+                      <Card key={m.id} className="p-4 cursor-pointer hover-elevate" onClick={() => setDetail({ type: "maneuver", data: m })} data-testid={`comp-maneuver-${m.id}`}>
+                        <div className="flex justify-between items-start gap-2">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold">{m.name}</span>
+                            <ChevronRight className="w-3 h-3 text-muted-foreground/50" />
+                          </div>
+                          {m.seeleCost && <Badge variant="secondary" className="shrink-0">{m.seeleCost} Seele</Badge>}
+                        </div>
+                        {m.effect && <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{m.effect}</p>}
+                        {m.prerequisite && <p className="mt-1 text-xs text-primary/60">Prereq: {m.prerequisite}</p>}
+                      </Card>
+                    ))}
                   </div>
-                  {m.effect && <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{m.effect}</p>}
-                  {m.prerequisite && <p className="mt-1 text-xs text-primary/60">Prereq: {m.prerequisite}</p>}
-                </Card>
-              ))}
-            </div>
+                </div>
+              ));
+            })()}
           </TabsContent>
 
           <TabsContent value="languages">
@@ -377,7 +393,7 @@ export default function CompendiumPage() {
                       <ChevronRight className="w-3 h-3 text-muted-foreground/50" />
                     </div>
                     <div className="flex gap-2 text-xs font-mono text-muted-foreground">
-                      <span>Diff: {l.difficulty}</span>
+                      <span>Cost: {l.difficulty}</span>
                       <span>DMG: {l.damage}</span>
                     </div>
                   </div>

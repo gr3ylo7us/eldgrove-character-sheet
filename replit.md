@@ -81,3 +81,15 @@ data/csv/     - Source CSV files for game reference data
   - rules.ts: Centralized data map with 30+ rule entries covering stats, derived attributes, combat, magic, resources, trackers
   - CompendiumDrawer: Global slide-out overlay accessible from any page via floating button (bottom-right)
   - Drawer includes tabs for Rules, Weapons, Armor, Skills, Languages, Feats, Archetypes with search
+- Feb 2026: Dice Roller & Formula Updates
+  - DiceRoller: Full d20 pool rolling with success counting (11+ = success, 18-20 = crit double, 1-3 = subtract)
+  - Floating dice FAB button alongside Compendium FAB (bottom-right)
+  - Manual roll controls: adjustable pool size, target number, custom label
+  - Roll history with color-coded die results, effects display
+  - Integrated dice rolls: clickable Dices buttons on stats, weapons, spells, skills in CharacterSheet and Datacard
+  - Spell casting: deducts SEELE cost on cast, disabled when insufficient Seele
+  - Derived stat formulas updated: WILL = VIT+DIP+POW, NERVE = ACU+FIN+INT
+  - Removed SEELE MAX, HEALTH, APTITUDE from CharacterSheet derived stats display
+  - Language "Difficulty" renamed to "COST" across all UI surfaces
+  - Maneuvers sorted by martial art type in Compendium and CompendiumDrawer
+  - Weapons dropdown cleaned: server-side + client-side filtering by valid weapon types

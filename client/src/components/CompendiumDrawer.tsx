@@ -123,7 +123,7 @@ function LanguagesTab({ search }: { search: string }) {
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm font-semibold">{l.name}</span>
             {l.domain && <Badge variant="secondary" className="text-[10px]">{l.domain}</Badge>}
-            <Badge variant="outline" className="text-[10px]">Diff: {l.difficulty}</Badge>
+            <Badge variant="outline" className="text-[10px]">Cost: {l.difficulty}</Badge>
           </div>
           {l.effect && <p className="text-[11px] text-muted-foreground/70 mt-1">{l.effect}</p>}
           {l.tags && <p className="text-[10px] text-muted-foreground/50 mt-0.5">Tags: {l.tags}</p>}
@@ -138,6 +138,16 @@ function FeatsManeuversTab({ search }: { search: string }) {
   const { data: maneuvers } = useManeuvers();
   const filteredFeats = (feats ?? []).filter((f: Feat) => f.name.toLowerCase().includes(search.toLowerCase()));
   const filteredManeuvers = (maneuvers ?? []).filter((m: Maneuver) => m.name.toLowerCase().includes(search.toLowerCase()));
+
+  const maneuverGroups: Record<string, Maneuver[]> = {};
+  for (const m of filteredManeuvers) {
+    const colonIdx = m.name.indexOf(":");
+    const cat = colonIdx > 0 ? m.name.substring(0, colonIdx).trim() : "General";
+    if (!maneuverGroups[cat]) maneuverGroups[cat] = [];
+    maneuverGroups[cat].push(m);
+  }
+  const sortedCats = Object.keys(maneuverGroups).sort((a, b) => a === "General" ? -1 : b === "General" ? 1 : a.localeCompare(b));
+
   return (
     <div className="space-y-4">
       {filteredFeats.length > 0 && (
@@ -153,11 +163,11 @@ function FeatsManeuversTab({ search }: { search: string }) {
           </div>
         </div>
       )}
-      {filteredManeuvers.length > 0 && (
-        <div>
-          <h4 className="text-xs font-mono text-muted-foreground uppercase tracking-wider mb-2">Maneuvers</h4>
+      {sortedCats.map(cat => (
+        <div key={cat}>
+          <h4 className="text-xs font-mono text-muted-foreground uppercase tracking-wider mb-2">{cat === "General" ? "General Maneuvers" : cat}</h4>
           <div className="space-y-2">
-            {filteredManeuvers.map((m: Maneuver) => (
+            {maneuverGroups[cat].map((m: Maneuver) => (
               <Card key={m.id} className="p-3">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-sm font-semibold">{m.name}</span>
@@ -168,7 +178,7 @@ function FeatsManeuversTab({ search }: { search: string }) {
             ))}
           </div>
         </div>
-      )}
+      ))}
     </div>
   );
 }

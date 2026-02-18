@@ -1,4 +1,5 @@
 import { useCharacter, useUpdateCharacter } from "@/hooks/use-characters";
+import { useDiceRoller } from "@/components/DiceRoller";
 import { RulesTooltip } from "@/components/RulesTooltip";
 import { useParams, Link, useLocation } from "wouter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -41,7 +42,7 @@ const WOUNDSCALE_STAGES = [
   { label: "Death's Door", max: 30, color: "bg-red-900" },
 ];
 
-function StatBlock({ label, value, onChange, statKey }: { label: string; value: number; onChange: (v: number) => void; statKey: string }) {
+function StatBlock({ label, value, onChange, statKey, rollDice }: { label: string; value: number; onChange: (v: number) => void; statKey: string; rollDice?: (pool: number, label: string) => void }) {
   const Icon = STAT_ICONS[statKey] || Zap;
   return (
     <div className="flex flex-col items-center gap-1 p-3 bg-secondary/30 rounded border border-border/20">
@@ -56,6 +57,11 @@ function StatBlock({ label, value, onChange, statKey }: { label: string; value: 
           <span className="text-lg">+</span>
         </Button>
       </div>
+      {rollDice && (
+        <Button size="icon" variant="ghost" onClick={() => rollDice(value, `${label} Roll`)} data-testid={`button-roll-stat-${statKey}`}>
+          <Dices className="w-3 h-3" />
+        </Button>
+      )}
     </div>
   );
 }
@@ -210,6 +216,7 @@ export default function CharacterSheetPage() {
   const id = parseInt(params.id || "0");
   const { data: character, isLoading } = useCharacter(id);
   const updateMut = useUpdateCharacter(id);
+  const { rollDice } = useDiceRoller();
   const { data: allWeapons } = useWeapons();
   const { data: allArmor } = useArmor();
   const { data: allSkills } = useSkills();
@@ -345,7 +352,7 @@ export default function CharacterSheetPage() {
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   {BODY_STATS.map(key => (
-                    <StatBlock key={key} statKey={key} label={STAT_LABELS[key]} value={(form as any)[key] ?? 1} onChange={v => update(key, v)} />
+                    <StatBlock key={key} statKey={key} label={STAT_LABELS[key]} value={(form as any)[key] ?? 1} onChange={v => update(key, v)} rollDice={rollDice} />
                   ))}
                 </div>
               </div>
@@ -356,7 +363,7 @@ export default function CharacterSheetPage() {
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   {MIND_STATS.map(key => (
-                    <StatBlock key={key} statKey={key} label={STAT_LABELS[key]} value={(form as any)[key] ?? 1} onChange={v => update(key, v)} />
+                    <StatBlock key={key} statKey={key} label={STAT_LABELS[key]} value={(form as any)[key] ?? 1} onChange={v => update(key, v)} rollDice={rollDice} />
                   ))}
                 </div>
               </div>
@@ -367,22 +374,19 @@ export default function CharacterSheetPage() {
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   {SPIRIT_STATS.map(key => (
-                    <StatBlock key={key} statKey={key} label={STAT_LABELS[key]} value={(form as any)[key] ?? (key === "talent" ? 0 : 1)} onChange={v => update(key, v)} />
+                    <StatBlock key={key} statKey={key} label={STAT_LABELS[key]} value={(form as any)[key] ?? (key === "talent" ? 0 : 1)} onChange={v => update(key, v)} rollDice={rollDice} />
                   ))}
                 </div>
               </div>
             </Card>
 
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
               <DerivedStat label="Reflexes" value={getReflexes(c)} icon={Zap} ruleKey="reflexes" />
               <DerivedStat label="Seek" value={getSeek(c)} icon={Crosshair} ruleKey="seek" />
               <DerivedStat label="Nerve" value={getNerve(c)} icon={Shield} ruleKey="nerve" />
-              <DerivedStat label="Health" value={getHealth(c)} icon={Heart} ruleKey="health" />
               <DerivedStat label="Will" value={getWill(c)} icon={Brain} ruleKey="will" />
-              <DerivedStat label="Aptitude" value={getAptitude(c)} icon={BookOpen} ruleKey="aptitude" />
               <DerivedStat label="Move" value={`${getMove(c)}m`} icon={Footprints} ruleKey="move" />
               <DerivedStat label="Evade" value={getEvade(c)} icon={Shield} ruleKey="evade" />
-              <DerivedStat label="Seele Max" value={getSeeleMax(c)} icon={Sparkles} ruleKey="seele" />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -472,7 +476,7 @@ export default function CharacterSheetPage() {
                 }}>
                   <SelectTrigger className="w-48" data-testid="select-add-weapon"><SelectValue placeholder="Add weapon..." /></SelectTrigger>
                   <SelectContent>
-                    {allWeapons?.map(w => <SelectItem key={w.id} value={w.name}>{w.name}</SelectItem>)}
+                    {allWeapons?.filter(w => w.type && ["Melee Weapon", "Blackpowder Weapon", "Projectile Weapon", "Explosive Weapon", "Natural Weapon"].includes(w.type)).map(w => <SelectItem key={w.id} value={w.name}>{w.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -492,11 +496,16 @@ export default function CharacterSheetPage() {
                       </div>
                       {w.effects && <p className="text-xs text-muted-foreground/70 italic mt-2">{w.effects}</p>}
                     </div>
-                    <Button size="icon" variant="ghost" onClick={() => {
-                      update("equippedWeapons", equippedWeapons.filter((_: any, j: number) => j !== i));
-                    }} data-testid={`button-remove-weapon-${i}`}>
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button size="icon" variant="ghost" onClick={() => rollDice(getWeaponAttack(c, w), `${w.name} Attack`, 11, w.effects ? [w.effects] : [])} data-testid={`button-roll-weapon-${i}`}>
+                        <Dices className="w-3 h-3" />
+                      </Button>
+                      <Button size="icon" variant="ghost" onClick={() => {
+                        update("equippedWeapons", equippedWeapons.filter((_: any, j: number) => j !== i));
+                      }} data-testid={`button-remove-weapon-${i}`}>
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
                   </div>
                 ))}
                 {equippedWeapons.length === 0 && (
@@ -533,7 +542,7 @@ export default function CharacterSheetPage() {
                           {lang && (
                             <div className="flex flex-wrap gap-2 mt-2">
                               <Badge variant="secondary" className="text-xs"><Target className="w-3 h-3 mr-1" /> <RulesTooltip ruleKey="spellCast">Cast:</RulesTooltip> {getSpellCast(c, lang)}</Badge>
-                              <Badge variant="secondary" className="text-xs"><RulesTooltip ruleKey="spellCost">Diff:</RulesTooltip> {lang.difficulty}</Badge>
+                              <Badge variant="secondary" className="text-xs"><RulesTooltip ruleKey="spellCost">Cost:</RulesTooltip> {lang.difficulty}</Badge>
                               {lang.damage && <Badge variant="secondary" className="text-xs"><Flame className="w-3 h-3 mr-1" /> DMG: {lang.damage}</Badge>}
                             </div>
                           )}
@@ -541,9 +550,26 @@ export default function CharacterSheetPage() {
                           {lang?.commands && <p className="text-xs text-muted-foreground mt-2"><span className="font-medium">Commands:</span> {lang.commands}</p>}
                           {lang?.effect && <p className="text-xs text-muted-foreground/70 italic mt-1">{lang.effect}</p>}
                         </div>
-                        <Button size="icon" variant="ghost" onClick={() => update("knownLanguages", knownLangs.filter((_, j) => j !== i))} data-testid={`button-remove-combat-lang-${i}`}>
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
+                        <div className="flex items-center gap-1 shrink-0">
+                          {lang && (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              disabled={(c.seeleCurrent ?? 0) < (lang.difficulty ?? 0)}
+                              onClick={() => {
+                                update("seeleCurrent", (c.seeleCurrent ?? 0) - lang.difficulty);
+                                rollDice(getSpellCast(c, lang), `Cast ${lname}`, 11, lang.tags ? [lang.tags] : []);
+                              }}
+                              data-testid={`button-roll-spell-${lname}`}
+                              className={(c.seeleCurrent ?? 0) < (lang.difficulty ?? 0) ? "text-destructive" : ""}
+                            >
+                              <Dices className="w-3 h-3" />
+                            </Button>
+                          )}
+                          <Button size="icon" variant="ghost" onClick={() => update("knownLanguages", knownLangs.filter((_, j) => j !== i))} data-testid={`button-remove-combat-lang-${i}`}>
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   );
@@ -598,6 +624,9 @@ export default function CharacterSheetPage() {
                           update("skillTiers", t);
                         }}>
                           <span>+</span>
+                        </Button>
+                        <Button size="icon" variant="ghost" onClick={() => rollDice(tier, `${sName} Check`)} data-testid={`button-roll-skill-${sName}`}>
+                          <Dices className="w-3 h-3" />
                         </Button>
                         <Button size="icon" variant="ghost" onClick={() => removeSkill(sName)} data-testid={`button-remove-skill-${sName}`}>
                           <Trash2 className="w-3 h-3" />

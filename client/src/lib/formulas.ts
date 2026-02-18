@@ -19,7 +19,7 @@ export function getSeek(c: Character): number {
 }
 
 export function getNerve(c: Character): number {
-  return (c.vitality ?? 1) + (c.diplomacy ?? 1) + (c.power ?? 1);
+  return (c.acumen ?? 1) + (c.finesse ?? 1) + (c.intuition ?? 1);
 }
 
 export function getHealth(c: Character): number {
@@ -27,7 +27,7 @@ export function getHealth(c: Character): number {
 }
 
 export function getWill(c: Character): number {
-  return (c.diplomacy ?? 1);
+  return (c.vitality ?? 1) + (c.diplomacy ?? 1) + (c.power ?? 1);
 }
 
 export function getAptitude(c: Character): number {

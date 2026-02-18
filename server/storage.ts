@@ -40,7 +40,11 @@ export class DatabaseStorage implements IStorage {
   async deleteCharacter(id: number) {
     await db.delete(characters).where(eq(characters.id, id));
   }
-  async getWeapons() { return db.select().from(weapons); }
+  async getWeapons() {
+    const validTypes = ['Melee Weapon', 'Blackpowder Weapon', 'Projectile Weapon', 'Explosive Weapon', 'Natural Weapon'];
+    const all = await db.select().from(weapons);
+    return all.filter(w => w.type && validTypes.includes(w.type));
+  }
   async getArmor() { return db.select().from(armor); }
   async getItems() { return db.select().from(items); }
   async getSkills() { return db.select().from(skills); }

@@ -90,11 +90,20 @@ export default function Home() {
                     LVL {char.level}
                   </span>
                 </div>
-                <div className="flex flex-wrap gap-2 text-xs font-mono">
-                  {Object.entries(STAT_LABELS).map(([key, label]) => (
-                    <span key={key} className="bg-background px-2 py-0.5 rounded border border-border/30">
-                      {label}: {(char as any)[key] ?? 1}
-                    </span>
+                <div className="grid grid-cols-3 gap-x-3 gap-y-0.5 text-xs font-mono">
+                  {[
+                    { keys: ["power", "finesse", "vitality"], color: "text-red-400" },
+                    { keys: ["acumen", "diplomacy", "intuition"], color: "text-blue-400" },
+                    { keys: ["talent", "moxie", "audacity"], color: "text-violet-400" },
+                  ].map((group) => (
+                    <div key={group.keys[0]} className="flex items-center gap-1.5">
+                      {group.keys.map(key => (
+                        <span key={key} className="flex items-center gap-0.5">
+                          <span className={`${group.color}`}>{STAT_LABELS[key]}</span>
+                          <span className="text-foreground font-bold">{(char as any)[key] ?? 0}</span>
+                        </span>
+                      ))}
+                    </div>
                   ))}
                 </div>
                 <div className="flex items-center gap-3 text-sm text-muted-foreground">

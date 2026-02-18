@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "wouter";
 import { useCharacter, useUpdateCharacter } from "@/hooks/use-characters";
-import { useLanguages, useFeats, useManeuvers } from "@/hooks/use-game-data";
+import { useLanguages, useFeats, useManeuvers, useSkills } from "@/hooks/use-game-data";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Swords, BookOpen, Shield, Heart, Zap, Sparkles, Minus, Plus, Activity, Wand2, Languages, Dices } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ArrowLeft, Swords, BookOpen, Shield, Heart, Zap, Sparkles, Minus, Plus, Activity, Wand2, Languages, Dices, ChevronDown, BookMarked, Crown, Star, Crosshair, Feather } from "lucide-react";
 import { STAT_LABELS, getReflexes, getSeek, getNerve, getHealth, getWill, getAptitude, getMove, getEvade, getSkulk, getSeeleMax, getWeaponAttack, getSpellCast, getWoundscaleThreshold } from "@/lib/formulas";
 import type { Character } from "@shared/schema";
 import { RulesTooltip } from "@/components/RulesTooltip";
@@ -142,91 +143,137 @@ function DatacardWoundBar({ wounds, onChange }: { wounds: number; onChange: (v: 
   );
 }
 
+function CollapsibleSection({ title, icon, defaultOpen = true, children, testId }: { title: string; icon: any; defaultOpen?: boolean; children: React.ReactNode; testId?: string }) {
+  const [open, setOpen] = useState(defaultOpen);
+  const Icon = icon;
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <Card className="p-4">
+        <CollapsibleTrigger asChild>
+          <Button variant="ghost" className="flex items-center justify-between w-full -mx-1 -mt-1 mb-1" data-testid={testId}>
+            <div className="flex items-center gap-2">
+              <Icon className="w-4 h-4 text-primary/70" />
+              <span className="text-xs font-mono text-muted-foreground uppercase tracking-wider">{title}</span>
+            </div>
+            <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+          </Button>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          {children}
+        </CollapsibleContent>
+      </Card>
+    </Collapsible>
+  );
+}
+
+const STAT_GROUPS = [
+  { keys: ["power", "finesse", "vitality"] as const, label: "Body", color: "text-red-400" },
+  { keys: ["acumen", "diplomacy", "intuition"] as const, label: "Mind", color: "text-blue-400" },
+  { keys: ["talent", "moxie", "audacity"] as const, label: "Spirit", color: "text-violet-400" },
+];
+
+function StatGrid({ character, rollDice }: { character: Character; rollDice: (opts: RollOptions) => void }) {
+  const c = character;
+  return (
+    <div className="grid grid-cols-3 gap-3">
+      {STAT_GROUPS.map(group => (
+        <div key={group.label}>
+          <div className={`text-[9px] font-mono ${group.color} uppercase text-center mb-1`}>{group.label}</div>
+          <div className="grid grid-cols-3 gap-1">
+            {group.keys.map(key => {
+              const val = (c as any)[key] ?? (key === "talent" ? 0 : 1);
+              return (
+                <div key={key} className="flex flex-col items-center">
+                  <span className="text-[10px] font-mono text-muted-foreground uppercase"><RulesTooltip ruleKey={key}>{STAT_LABELS[key]}</RulesTooltip></span>
+                  <div className="text-xl font-bold text-primary" style={{ fontFamily: "var(--font-display)" }}>{val}</div>
+                  <Button size="icon" variant="ghost" onClick={() => rollDice({ poolSize: val, label: `${STAT_LABELS[key]} Roll`, rollType: "stat" })} data-testid={`button-roll-stat-${key}`}>
+                    <Dices className="w-3 h-3" />
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function DerivedStatsRow({ character, rollDice }: { character: Character; rollDice: (opts: RollOptions) => void }) {
+  const c = character;
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-center">
+      <Card className="p-2 flex flex-col items-center">
+        <span className="text-[10px] text-muted-foreground font-mono"><RulesTooltip ruleKey="evade">EVADE</RulesTooltip></span>
+        <div className="text-lg font-bold">{getEvade(c)}</div>
+        <Button size="icon" variant="ghost" onClick={() => rollDice({ poolSize: getEvade(c), label: "Evade Roll", rollType: "evade" })} data-testid="button-roll-evade">
+          <Dices className="w-3 h-3" />
+        </Button>
+      </Card>
+      <Card className="p-2"><span className="text-[10px] text-muted-foreground font-mono"><RulesTooltip ruleKey="protection">PROT</RulesTooltip></span><div className="text-lg font-bold">{c.armorProtection ?? 0}</div></Card>
+      <Card className="p-2"><span className="text-[10px] text-muted-foreground font-mono"><RulesTooltip ruleKey="move">MOVE</RulesTooltip></span><div className="text-lg font-bold">{getMove(c)}"</div></Card>
+      <Card className="p-2"><span className="text-[10px] text-muted-foreground font-mono"><RulesTooltip ruleKey="nerve">NERVE</RulesTooltip></span><div className="text-lg font-bold">{getNerve(c)}</div></Card>
+      <Card className="p-2"><span className="text-[10px] text-muted-foreground font-mono"><RulesTooltip ruleKey="reflexes">REFL</RulesTooltip></span><div className="text-lg font-bold">{getReflexes(c)}</div></Card>
+      <Card className="p-2"><span className="text-[10px] text-muted-foreground font-mono"><RulesTooltip ruleKey="seek">SEEK</RulesTooltip></span><div className="text-lg font-bold">{getSeek(c)}</div></Card>
+      <Card className="p-2"><span className="text-[10px] text-muted-foreground font-mono"><RulesTooltip ruleKey="will">WILL</RulesTooltip></span><div className="text-lg font-bold">{getWill(c)}</div></Card>
+      <Card className="p-2"><span className="text-[10px] text-muted-foreground font-mono"><RulesTooltip ruleKey="skulk">SKULK</RulesTooltip></span><div className="text-lg font-bold">{c.skulkCurrent ?? 0}/{c.skulkMax ?? 0}</div></Card>
+    </div>
+  );
+}
+
+function SkillsSection({ character, rollDice }: { character: Character; rollDice: (opts: RollOptions) => void }) {
+  const skillTiers = (character.skillTiers as Record<string, number>) || {};
+  const nonZeroSkills = Object.entries(skillTiers).filter(([_, v]) => v > 0).sort((a, b) => b[1] - a[1]);
+  const { data: allSkills } = useSkills();
+
+  if (nonZeroSkills.length === 0) {
+    return <p className="text-xs text-muted-foreground italic text-center py-2">No trained skills.</p>;
+  }
+
+  return (
+    <div className="grid grid-cols-2 gap-1">
+      {nonZeroSkills.map(([name, tier]) => {
+        const skillData = allSkills?.find(s => s.name === name);
+        return (
+          <div key={name} className="flex items-center justify-between px-2 py-1 bg-secondary/20 rounded text-sm" data-testid={`dc-skill-${name}`}>
+            <div className="flex items-center gap-1 min-w-0">
+              <BookMarked className="w-3 h-3 text-primary/40 shrink-0" />
+              <span className="truncate">{name}</span>
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
+              <span className="font-bold text-primary text-xs">{tier}</span>
+              <Button size="icon" variant="ghost" onClick={() => rollDice({ poolSize: tier, label: `${name} Check`, rollType: "skill" })} data-testid={`button-roll-skill-${name}`}>
+                <Dices className="w-3 h-3" />
+              </Button>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function CombatDatacard({ character, onUpdate }: { character: Character; onUpdate: (key: string, value: any) => void }) {
   const c = character;
   const equippedWeapons = (c.equippedWeapons as any[]) || [];
   const knownManeuvers = (c.knownManeuvers as string[]) || [];
   const knownLangs = (c.knownLanguages as string[]) || [];
+  const knownFeats = (c.knownFeats as string[]) || [];
   const { data: allManeuvers } = useManeuvers();
   const { data: allLanguages } = useLanguages();
+  const { data: allFeats } = useFeats();
   const { rollDice } = useDiceRoller();
-  const woundscale = getWoundscaleThreshold(c.woundsCurrent ?? 0);
   const seeleMax = getSeeleMax(c);
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-3 gap-3">
-        <div>
-          <div className="text-[9px] font-mono text-red-400 uppercase text-center mb-1">Body</div>
-          <div className="grid grid-cols-3 gap-2">
-            {(["power", "finesse", "vitality"] as const).map(key => (
-              <div key={key} className="text-center">
-                <span className="text-[10px] font-mono text-muted-foreground uppercase"><RulesTooltip ruleKey={key}>{STAT_LABELS[key]}</RulesTooltip></span>
-                <div className="flex items-center justify-center gap-0.5">
-                  <div className="text-xl font-bold text-primary" style={{ fontFamily: "var(--font-display)" }}>{(c as any)[key] ?? 1}</div>
-                  <Button size="icon" variant="ghost" onClick={() => rollDice({ poolSize: (c as any)[key] ?? 1, label: `${STAT_LABELS[key]} Roll`, rollType: "stat" })} data-testid={`button-roll-stat-${key}`}>
-                    <Dices className="w-3 h-3" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div>
-          <div className="text-[9px] font-mono text-blue-400 uppercase text-center mb-1">Mind</div>
-          <div className="grid grid-cols-3 gap-2">
-            {(["acumen", "diplomacy", "intuition"] as const).map(key => (
-              <div key={key} className="text-center">
-                <span className="text-[10px] font-mono text-muted-foreground uppercase"><RulesTooltip ruleKey={key}>{STAT_LABELS[key]}</RulesTooltip></span>
-                <div className="flex items-center justify-center gap-0.5">
-                  <div className="text-xl font-bold text-primary" style={{ fontFamily: "var(--font-display)" }}>{(c as any)[key] ?? 1}</div>
-                  <Button size="icon" variant="ghost" onClick={() => rollDice({ poolSize: (c as any)[key] ?? 1, label: `${STAT_LABELS[key]} Roll`, rollType: "stat" })} data-testid={`button-roll-stat-${key}`}>
-                    <Dices className="w-3 h-3" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div>
-          <div className="text-[9px] font-mono text-violet-400 uppercase text-center mb-1">Spirit</div>
-          <div className="grid grid-cols-3 gap-2">
-            {(["talent", "moxie", "audacity"] as const).map(key => (
-              <div key={key} className="text-center">
-                <span className="text-[10px] font-mono text-muted-foreground uppercase"><RulesTooltip ruleKey={key}>{STAT_LABELS[key]}</RulesTooltip></span>
-                <div className="flex items-center justify-center gap-0.5">
-                  <div className="text-xl font-bold text-primary" style={{ fontFamily: "var(--font-display)" }}>{(c as any)[key] ?? (key === "talent" ? 0 : 1)}</div>
-                  <Button size="icon" variant="ghost" onClick={() => rollDice({ poolSize: (c as any)[key] ?? (key === "talent" ? 0 : 1), label: `${STAT_LABELS[key]} Roll`, rollType: "stat" })} data-testid={`button-roll-stat-${key}`}>
-                    <Dices className="w-3 h-3" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+    <div className="space-y-3">
+      <StatGrid character={c} rollDice={rollDice} />
+      <DerivedStatsRow character={c} rollDice={rollDice} />
 
       <ResourceTracker label={<RulesTooltip ruleKey="seele">Seele</RulesTooltip>} testId="seele" current={c.seeleCurrent ?? 0} max={seeleMax} onChange={v => onUpdate("seeleCurrent", v)} icon={Sparkles} />
-
       <DatacardWoundBar wounds={c.woundsCurrent ?? 0} onChange={v => onUpdate("woundsCurrent", v)} />
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-center">
-        <Card className="p-2">
-          <span className="text-[10px] text-muted-foreground font-mono"><RulesTooltip ruleKey="evade">EVADE</RulesTooltip></span>
-          <div className="flex items-center justify-center gap-1">
-            <div className="text-lg font-bold">{getEvade(c)}</div>
-            <Button size="icon" variant="ghost" onClick={() => rollDice({ poolSize: getEvade(c), label: "Evade Roll", rollType: "evade" })} data-testid="button-roll-evade">
-              <Dices className="w-3 h-3" />
-            </Button>
-          </div>
-        </Card>
-        <Card className="p-2"><span className="text-[10px] text-muted-foreground font-mono"><RulesTooltip ruleKey="protection">PROT</RulesTooltip></span><div className="text-lg font-bold">{c.armorProtection ?? 0}</div></Card>
-        <Card className="p-2"><span className="text-[10px] text-muted-foreground font-mono"><RulesTooltip ruleKey="move">MOVE</RulesTooltip></span><div className="text-lg font-bold">{getMove(c)}"</div></Card>
-        <Card className="p-2"><span className="text-[10px] text-muted-foreground font-mono"><RulesTooltip ruleKey="nerve">NERVE</RulesTooltip></span><div className="text-lg font-bold">{getNerve(c)}</div></Card>
-      </div>
-
-      <Card className="p-4">
-        <h4 className="text-xs font-mono text-muted-foreground uppercase mb-2">Weapons</h4>
+      <CollapsibleSection title="Weapons" icon={Swords} testId="section-weapons">
         <div className="space-y-2">
           {equippedWeapons.map((w: any, i: number) => (
             <div key={i} className="flex items-center justify-between gap-2 p-2 bg-secondary/20 rounded" data-testid={`combat-weapon-${i}`}>
@@ -235,43 +282,20 @@ function CombatDatacard({ character, onUpdate }: { character: Character; onUpdat
                 <div className="flex gap-2 text-xs text-muted-foreground mt-0.5">
                   <span><RulesTooltip ruleKey="weaponAttack">ATK:</RulesTooltip> {getWeaponAttack(c, w)}</span>
                   <span><RulesTooltip ruleKey="weaponDamage">DMG:</RulesTooltip> {w.normalDamage}/{w.critDamage}</span>
+                  <span>{w.damageType}</span>
                 </div>
               </div>
-              <div className="flex items-center gap-1 shrink-0">
-                <Button size="icon" variant="ghost" onClick={() => rollDice({ poolSize: getWeaponAttack(c, w), label: `${w.name} Attack`, rollType: "weapon", effects: w.effects ? [w.effects] : [], damageInfo: { normalDamage: w.normalDamage, critDamage: w.critDamage, damageType: w.damageType } })} data-testid={`button-roll-weapon-${i}`}>
-                  <Dices className="w-3 h-3" />
-                </Button>
-                <span className="text-xs text-muted-foreground">{w.damageType}</span>
-              </div>
+              <Button size="icon" variant="ghost" onClick={() => rollDice({ poolSize: getWeaponAttack(c, w), label: `${w.name} Attack`, rollType: "weapon", effects: w.effects ? [w.effects] : [], damageInfo: { normalDamage: w.normalDamage, critDamage: w.critDamage, damageType: w.damageType } })} data-testid={`button-roll-weapon-${i}`}>
+                <Dices className="w-3 h-3" />
+              </Button>
             </div>
           ))}
+          {equippedWeapons.length === 0 && <p className="text-xs text-muted-foreground italic text-center py-2">No weapons equipped.</p>}
         </div>
-      </Card>
-
-      <Card className="p-4">
-        <h4 className="text-xs font-mono text-muted-foreground uppercase mb-2"><RulesTooltip ruleKey="maneuvers">Maneuvers</RulesTooltip></h4>
-        <div className="space-y-1">
-          {knownManeuvers.map((mname, i) => {
-            const man = allManeuvers?.find(m => m.name === mname);
-            return (
-              <div key={i} className="flex items-start justify-between gap-2 p-2 bg-secondary/20 rounded text-sm" data-testid={`combat-maneuver-${i}`}>
-                <div>
-                  <span className="font-semibold">{mname}</span>
-                  {man && <p className="text-xs text-muted-foreground mt-0.5">{man.effect}</p>}
-                </div>
-                {man && <span className="text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded shrink-0"><RulesTooltip ruleKey="maneuvers">{man.seeleCost}</RulesTooltip></span>}
-              </div>
-            );
-          })}
-        </div>
-      </Card>
+      </CollapsibleSection>
 
       {knownLangs.length > 0 && (
-        <Card className="p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Languages className="w-4 h-4 text-primary/70" />
-            <h4 className="text-xs font-mono text-muted-foreground uppercase">Magick Languages</h4>
-          </div>
+        <CollapsibleSection title="Magick Languages" icon={Languages} testId="section-languages">
           <div className="space-y-2">
             {knownLangs.map((lname, i) => {
               const lang = allLanguages?.find(l => l.name === lname);
@@ -310,7 +334,46 @@ function CombatDatacard({ character, onUpdate }: { character: Character; onUpdat
               );
             })}
           </div>
-        </Card>
+        </CollapsibleSection>
+      )}
+
+      <CollapsibleSection title="Skills" icon={BookOpen} defaultOpen={false} testId="section-combat-skills">
+        <SkillsSection character={c} rollDice={rollDice} />
+      </CollapsibleSection>
+
+      {knownManeuvers.length > 0 && (
+        <CollapsibleSection title="Maneuvers" icon={Crosshair} testId="section-maneuvers">
+          <div className="space-y-1">
+            {knownManeuvers.map((mname, i) => {
+              const man = allManeuvers?.find(m => m.name === mname);
+              return (
+                <div key={i} className="flex items-start justify-between gap-2 p-2 bg-secondary/20 rounded text-sm" data-testid={`combat-maneuver-${i}`}>
+                  <div>
+                    <span className="font-semibold">{mname}</span>
+                    {man && <p className="text-xs text-muted-foreground mt-0.5">{man.effect}</p>}
+                  </div>
+                  {man && <span className="text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded shrink-0"><RulesTooltip ruleKey="maneuvers">{man.seeleCost}</RulesTooltip></span>}
+                </div>
+              );
+            })}
+          </div>
+        </CollapsibleSection>
+      )}
+
+      {knownFeats.length > 0 && (
+        <CollapsibleSection title="Feats" icon={Star} testId="section-combat-feats">
+          <div className="space-y-1">
+            {knownFeats.map((fname, i) => {
+              const feat = allFeats?.find(f => f.name === fname);
+              return (
+                <div key={i} className="px-2 py-1.5 bg-secondary/20 rounded text-sm" data-testid={`combat-feat-${i}`}>
+                  <span className="font-semibold">{fname}</span>
+                  {feat && <p className="text-xs text-muted-foreground mt-0.5">{feat.effect}</p>}
+                </div>
+              );
+            })}
+          </div>
+        </CollapsibleSection>
       )}
 
       {c.armorName && (
@@ -324,7 +387,6 @@ function CombatDatacard({ character, onUpdate }: { character: Character; onUpdat
 
 function RoleplayDatacard({ character, onUpdate }: { character: Character; onUpdate: (key: string, value: any) => void }) {
   const c = character;
-  const skillTiers = (c.skillTiers as Record<string, number>) || {};
   const knownLangs = (c.knownLanguages as string[]) || [];
   const knownFeats = (c.knownFeats as string[]) || [];
   const selectedArchetypes = (c.selectedArchetypes as any[]) || [];
@@ -334,60 +396,10 @@ function RoleplayDatacard({ character, onUpdate }: { character: Character; onUpd
   const { rollDice } = useDiceRoller();
   const seeleMax = getSeeleMax(c);
 
-  const nonZeroSkills = Object.entries(skillTiers).filter(([_, v]) => v > 0).sort((a, b) => b[1] - a[1]);
-
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-3 gap-3">
-        <div>
-          <div className="text-[9px] font-mono text-red-400 uppercase text-center mb-1">Body</div>
-          <div className="grid grid-cols-3 gap-2">
-            {(["power", "finesse", "vitality"] as const).map(key => (
-              <div key={key} className="text-center">
-                <span className="text-[10px] font-mono text-muted-foreground uppercase"><RulesTooltip ruleKey={key}>{STAT_LABELS[key]}</RulesTooltip></span>
-                <div className="flex items-center justify-center gap-0.5">
-                  <div className="text-xl font-bold text-primary" style={{ fontFamily: "var(--font-display)" }}>{(c as any)[key] ?? 1}</div>
-                  <Button size="icon" variant="ghost" onClick={() => rollDice({ poolSize: (c as any)[key] ?? 1, label: `${STAT_LABELS[key]} Roll`, rollType: "stat" })} data-testid={`button-roll-stat-${key}`}>
-                    <Dices className="w-3 h-3" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div>
-          <div className="text-[9px] font-mono text-blue-400 uppercase text-center mb-1">Mind</div>
-          <div className="grid grid-cols-3 gap-2">
-            {(["acumen", "diplomacy", "intuition"] as const).map(key => (
-              <div key={key} className="text-center">
-                <span className="text-[10px] font-mono text-muted-foreground uppercase"><RulesTooltip ruleKey={key}>{STAT_LABELS[key]}</RulesTooltip></span>
-                <div className="flex items-center justify-center gap-0.5">
-                  <div className="text-xl font-bold text-primary" style={{ fontFamily: "var(--font-display)" }}>{(c as any)[key] ?? 1}</div>
-                  <Button size="icon" variant="ghost" onClick={() => rollDice({ poolSize: (c as any)[key] ?? 1, label: `${STAT_LABELS[key]} Roll`, rollType: "stat" })} data-testid={`button-roll-stat-${key}`}>
-                    <Dices className="w-3 h-3" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div>
-          <div className="text-[9px] font-mono text-violet-400 uppercase text-center mb-1">Spirit</div>
-          <div className="grid grid-cols-3 gap-2">
-            {(["talent", "moxie", "audacity"] as const).map(key => (
-              <div key={key} className="text-center">
-                <span className="text-[10px] font-mono text-muted-foreground uppercase"><RulesTooltip ruleKey={key}>{STAT_LABELS[key]}</RulesTooltip></span>
-                <div className="flex items-center justify-center gap-0.5">
-                  <div className="text-xl font-bold text-primary" style={{ fontFamily: "var(--font-display)" }}>{(c as any)[key] ?? (key === "talent" ? 0 : 1)}</div>
-                  <Button size="icon" variant="ghost" onClick={() => rollDice({ poolSize: (c as any)[key] ?? (key === "talent" ? 0 : 1), label: `${STAT_LABELS[key]} Roll`, rollType: "stat" })} data-testid={`button-roll-stat-${key}`}>
-                    <Dices className="w-3 h-3" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+    <div className="space-y-3">
+      <StatGrid character={c} rollDice={rollDice} />
+      <DerivedStatsRow character={c} rollDice={rollDice} />
 
       <div className="grid grid-cols-2 gap-3">
         <ResourceTracker label={<RulesTooltip ruleKey="seele">Seele</RulesTooltip>} testId="seele" current={c.seeleCurrent ?? 0} max={seeleMax} onChange={v => onUpdate("seeleCurrent", v)} icon={Sparkles} />
@@ -399,73 +411,60 @@ function RoleplayDatacard({ character, onUpdate }: { character: Character; onUpd
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-2 text-center">
-        <Card className="p-2"><span className="text-[10px] text-muted-foreground font-mono"><RulesTooltip ruleKey="seek">SEEK</RulesTooltip></span><div className="text-lg font-bold">{getSeek(c)}</div></Card>
-        <Card className="p-2"><span className="text-[10px] text-muted-foreground font-mono"><RulesTooltip ruleKey="will">WILL</RulesTooltip></span><div className="text-lg font-bold">{getWill(c)}</div></Card>
-        <Card className="p-2"><span className="text-[10px] text-muted-foreground font-mono"><RulesTooltip ruleKey="skulk">SKULK</RulesTooltip></span><div className="text-lg font-bold">{c.skulkCurrent ?? 0}/{c.skulkMax ?? 0}</div></Card>
-      </div>
+      <CollapsibleSection title="Skills" icon={BookOpen} testId="section-rp-skills">
+        <SkillsSection character={c} rollDice={rollDice} />
+      </CollapsibleSection>
 
-      <Card className="p-4">
-        <h4 className="text-xs font-mono text-muted-foreground uppercase mb-2"><RulesTooltip ruleKey="skills">Skills</RulesTooltip></h4>
-        <div className="grid grid-cols-2 gap-1">
-          {nonZeroSkills.map(([name, tier]) => (
-            <div key={name} className="flex justify-between px-2 py-1 bg-secondary/20 rounded text-sm">
-              <span>{name}</span>
-              <span className="font-bold text-primary">{tier}</span>
-            </div>
-          ))}
-        </div>
-      </Card>
-
-      <Card className="p-4">
-        <h4 className="text-xs font-mono text-muted-foreground uppercase mb-2">Magick Languages</h4>
-        <div className="space-y-1">
-          {knownLangs.map((lname, i) => {
-            const lang = allLanguages?.find(l => l.name === lname);
-            return (
-              <div key={i} className="flex items-center justify-between px-2 py-1 bg-secondary/20 rounded text-sm" data-testid={`rp-lang-${i}`}>
-                <div>
-                  <span className="font-semibold">{lname}</span>
-                  {lang && <span className="text-xs text-muted-foreground ml-2">({lang.domain})</span>}
+      {knownLangs.length > 0 && (
+        <CollapsibleSection title="Magick Languages" icon={Languages} testId="section-rp-languages">
+          <div className="space-y-1">
+            {knownLangs.map((lname, i) => {
+              const lang = allLanguages?.find(l => l.name === lname);
+              return (
+                <div key={i} className="flex items-center justify-between px-2 py-1 bg-secondary/20 rounded text-sm" data-testid={`rp-lang-${i}`}>
+                  <div>
+                    <span className="font-semibold">{lname}</span>
+                    {lang && <span className="text-xs text-muted-foreground ml-2">({lang.domain})</span>}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    {lang && <span className="text-xs font-mono"><RulesTooltip ruleKey="spellCast">Cast:</RulesTooltip> {getSpellCast(c, lang)}</span>}
+                    {lang && (
+                      <Button size="icon" variant="ghost" onClick={() => rollDice({ poolSize: getSpellCast(c, lang), label: `Cast ${lname}`, rollType: "spell", effects: lang.tags ? [lang.tags] : [], damageInfo: lang.damage ? { languageDamage: lang.damage } : undefined })} data-testid={`button-roll-spell-${lname}`}>
+                        <Dices className="w-3 h-3" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  {lang && <span className="text-xs font-mono"><RulesTooltip ruleKey="spellCast">Cast:</RulesTooltip> {getSpellCast(c, lang)}</span>}
-                  {lang && (
-                    <Button size="icon" variant="ghost" onClick={() => rollDice({ poolSize: getSpellCast(c, lang), label: `Cast ${lname}`, rollType: "spell", effects: lang.tags ? [lang.tags] : [], damageInfo: lang.damage ? { languageDamage: lang.damage } : undefined })} data-testid={`button-roll-spell-${lname}`}>
-                      <Dices className="w-3 h-3" />
-                    </Button>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </Card>
+              );
+            })}
+          </div>
+        </CollapsibleSection>
+      )}
 
-      <Card className="p-4">
-        <h4 className="text-xs font-mono text-muted-foreground uppercase mb-2"><RulesTooltip ruleKey="feats">Feats</RulesTooltip></h4>
-        <div className="space-y-1">
-          {knownFeats.map((fname, i) => {
-            const feat = allFeats?.find(f => f.name === fname);
-            return (
-              <div key={i} className="px-2 py-1.5 bg-secondary/20 rounded text-sm" data-testid={`rp-feat-${i}`}>
-                <span className="font-semibold">{fname}</span>
-                {feat && <p className="text-xs text-muted-foreground mt-0.5">{feat.effect}</p>}
-              </div>
-            );
-          })}
-        </div>
-      </Card>
+      {knownFeats.length > 0 && (
+        <CollapsibleSection title="Feats" icon={Star} testId="section-rp-feats">
+          <div className="space-y-1">
+            {knownFeats.map((fname, i) => {
+              const feat = allFeats?.find(f => f.name === fname);
+              return (
+                <div key={i} className="px-2 py-1.5 bg-secondary/20 rounded text-sm" data-testid={`rp-feat-${i}`}>
+                  <span className="font-semibold">{fname}</span>
+                  {feat && <p className="text-xs text-muted-foreground mt-0.5">{feat.effect}</p>}
+                </div>
+              );
+            })}
+          </div>
+        </CollapsibleSection>
+      )}
 
       {archetypeFeatures.length > 0 && (
-        <Card className="p-4">
-          <h4 className="text-xs font-mono text-muted-foreground uppercase mb-2"><RulesTooltip ruleKey="archetypes">Archetype Features</RulesTooltip></h4>
+        <CollapsibleSection title="Archetype Features" icon={Crown} testId="section-rp-archetypes">
           <div className="space-y-1">
             {archetypeFeatures.map((feat: string, i: number) => (
               <p key={i} className="text-sm text-muted-foreground px-2 py-1 bg-secondary/20 rounded">{feat}</p>
             ))}
           </div>
-        </Card>
+        </CollapsibleSection>
       )}
     </div>
   );

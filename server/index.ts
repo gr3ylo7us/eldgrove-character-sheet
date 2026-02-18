@@ -4,6 +4,8 @@ import { serveStatic } from "./static";
 import { createServer } from "http";
 
 const app = express();
+// Trust Render's reverse proxy so secure cookies work behind HTTPS termination
+app.set("trust proxy", 1);
 const httpServer = createServer(app);
 
 declare module "http" {

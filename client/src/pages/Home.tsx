@@ -1,28 +1,13 @@
-import { useCharacters, useCreateCharacter, useDeleteCharacter } from "@/hooks/use-characters";
+import { useCharacters, useDeleteCharacter } from "@/hooks/use-characters";
 import { Link } from "wouter";
 import { Scroll, Plus, Trash2, Shield, Swords } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { STAT_LABELS, getWoundscaleThreshold } from "@/lib/formulas";
-import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
 export default function Home() {
   const { data: characters, isLoading } = useCharacters();
-  const createMut = useCreateCharacter();
   const deleteMut = useDeleteCharacter();
-  const [newName, setNewName] = useState("");
-  const [newRace, setNewRace] = useState("");
-  const [open, setOpen] = useState(false);
-
-  const handleCreate = () => {
-    if (!newName.trim()) return;
-    createMut.mutate({ name: newName.trim(), race: newRace.trim() }, {
-      onSuccess: () => { setNewName(""); setNewRace(""); setOpen(false); }
-    });
-  };
 
   if (isLoading) {
     return (
@@ -51,29 +36,9 @@ export default function Home() {
                 <Scroll className="w-4 h-4 mr-2" /> Compendium
               </Button>
             </Link>
-            <Dialog open={open} onOpenChange={setOpen}>
-              <DialogTrigger asChild>
-                <Button data-testid="button-create-character"><Plus className="w-4 h-4 mr-2" /> New Character</Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle style={{ fontFamily: "var(--font-display)" }}>Create New Character</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 pt-2">
-                  <div className="space-y-2">
-                    <Label>Name</Label>
-                    <Input data-testid="input-char-name" value={newName} onChange={e => setNewName(e.target.value)} placeholder="Enter character name" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Race</Label>
-                    <Input data-testid="input-char-race" value={newRace} onChange={e => setNewRace(e.target.value)} placeholder="Human, Elf, Orc..." />
-                  </div>
-                  <Button data-testid="button-submit-create" className="w-full" onClick={handleCreate} disabled={createMut.isPending}>
-                    {createMut.isPending ? "Creating..." : "Create Character"}
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
+            <Link href="/create">
+              <Button data-testid="button-create-character"><Plus className="w-4 h-4 mr-2" /> New Character</Button>
+            </Link>
           </div>
         </header>
 

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { BookOpen, Dices } from "lucide-react";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
+import CreateCharacter from "@/pages/CreateCharacter";
 import CharacterSheet from "@/pages/CharacterSheet";
 import Datacard from "@/pages/Datacard";
 import Compendium from "@/pages/Compendium";
@@ -18,6 +19,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home}/>
+      <Route path="/create" component={CreateCharacter}/>
       <Route path="/character/:id" component={CharacterSheet}/>
       <Route path="/datacard/:id" component={Datacard}/>
       <Route path="/compendium" component={Compendium}/>

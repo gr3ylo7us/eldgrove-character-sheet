@@ -103,3 +103,12 @@ data/csv/     - Source CSV files for game reference data
   - SKULK depletion syncs across CharacterSheet and Datacards via onSkulkSpent callback
   - DiceRoller: pendingSilentRoll state shows SneakAttackPanel before rolling Silent attacks
   - Sneak dice visually distinguished with indigo borders and EyeOff icon in roll results
+- Feb 2026: Character Creation Wizard
+  - New /create page with 6-step wizard: Basics, Stats, Archetype, Skills/Feats, Equipment, Summary
+  - Step-through guide showing level bonuses at each level (stats, skill openings, archetype features)
+  - Quick Generate: random character creation with role selection (combat style x role type = 12 roles)
+  - Role-based generation: Melee/Ranged/Magic x DPS/Tank/Support/Rogue
+  - Archetype mapping per role (e.g., Magic DPS -> Mage -> Sorcerer/Wizard -> Mystic/Druid)
+  - Stat weighting, weapon/armor/skill/language selection based on role
+  - characterGenerator.ts utility for client-side random generation
+  - Home page "New Character" button now links to /create wizard instead of simple dialog

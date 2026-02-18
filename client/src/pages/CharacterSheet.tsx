@@ -176,9 +176,15 @@ function SkulkTracker({ skulkMax, skulkCurrent, derivedSkulk, onMaxChange, onCur
         <span className="text-muted-foreground">/</span>
         <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground">Max</span>
-          <Input type="number" className="w-14 text-center" value={skulkMax}
+          <Button size="icon" variant="ghost" onClick={() => onMaxChange(Math.max(0, skulkMax - 1))} data-testid="button-skulk-max-dec">
+              <span>-</span>
+            </Button>
+            <Input type="number" className="w-14 text-center" value={skulkMax}
             onChange={e => onMaxChange(Math.max(0, parseInt(e.target.value) || 0))}
             data-testid="input-skulk-max" />
+            <Button size="icon" variant="ghost" onClick={() => onMaxChange(skulkMax + 1)} data-testid="button-skulk-max-inc">
+              <span>+</span>
+            </Button>
         </div>
         <Button variant="outline" onClick={() => { onMaxChange(derivedSkulk); onCurrentChange(derivedSkulk); }} data-testid="button-skulk-set-max">
           <Dices className="w-3 h-3 mr-1" /> Set Max
@@ -324,7 +330,13 @@ export default function CharacterSheetPage() {
             <div className="flex items-center gap-2 text-sm">
               <Star className="w-3.5 h-3.5 text-primary/60" />
               <RulesTooltip ruleKey="level"><span className="text-muted-foreground font-mono">LVL</span></RulesTooltip>
+              <Button size="icon" variant="ghost" onClick={() => update("level", Math.max(1, (form.level ?? 1) - 1))} data-testid="button-level-dec">
+                <span>-</span>
+              </Button>
               <Input type="number" className="w-14 text-center" value={form.level ?? 1} onChange={e => update("level", parseInt(e.target.value) || 1)} data-testid="input-level" />
+              <Button size="icon" variant="ghost" onClick={() => update("level", (form.level ?? 1) + 1)} data-testid="button-level-inc">
+                <span>+</span>
+              </Button>
             </div>
             <Link href={`/datacard/${id}`}>
               <Button variant="outline" data-testid="link-datacard"><Swords className="w-4 h-4 mr-2" /> Datacards</Button>
@@ -403,8 +415,14 @@ export default function CharacterSheetPage() {
               <Card className="p-5">
                 <SectionHeader icon={Sparkles} label="Seele" ruleKey="seele" />
                 <div className="flex items-center gap-2">
+                  <Button size="icon" variant="ghost" onClick={() => update("seeleCurrent", Math.max(0, (form.seeleCurrent ?? 0) - 1))} data-testid="button-seele-dec">
+                    <span>-</span>
+                  </Button>
                   <Input type="number" className="w-16 text-center" value={form.seeleCurrent ?? 0}
                     onChange={e => update("seeleCurrent", parseInt(e.target.value) || 0)} data-testid="input-seele-current" />
+                  <Button size="icon" variant="ghost" onClick={() => update("seeleCurrent", (form.seeleCurrent ?? 0) + 1)} data-testid="button-seele-inc">
+                    <span>+</span>
+                  </Button>
                   <span className="text-muted-foreground">/</span>
                   <span className="text-sm font-bold">{getSeeleMax(c)}</span>
                 </div>
@@ -437,12 +455,24 @@ export default function CharacterSheetPage() {
                 <div className="flex items-center gap-2">
                   <Crown className="w-3.5 h-3.5 text-primary/60" />
                   <RulesTooltip ruleKey="renown"><span className="text-xs text-muted-foreground">Renown</span></RulesTooltip>
+                  <Button size="icon" variant="ghost" onClick={() => update("renown", Math.max(0, (form.renown ?? 0) - 1))} data-testid="button-renown-dec">
+                    <span>-</span>
+                  </Button>
                   <Input type="number" className="w-16 text-center" value={form.renown ?? 0} onChange={e => update("renown", parseInt(e.target.value) || 0)} data-testid="input-renown" />
+                  <Button size="icon" variant="ghost" onClick={() => update("renown", (form.renown ?? 0) + 1)} data-testid="button-renown-inc">
+                    <span>+</span>
+                  </Button>
                 </div>
                 <div className="flex items-center gap-2">
                   <Star className="w-3.5 h-3.5 text-primary/60" />
                   <RulesTooltip ruleKey="karma"><span className="text-xs text-muted-foreground">Karma</span></RulesTooltip>
+                  <Button size="icon" variant="ghost" onClick={() => update("karma", Math.max(0, (form.karma ?? 0) - 1))} data-testid="button-karma-dec">
+                    <span>-</span>
+                  </Button>
                   <Input type="number" className="w-16 text-center" value={form.karma ?? 0} onChange={e => update("karma", parseInt(e.target.value) || 0)} data-testid="input-karma" />
+                  <Button size="icon" variant="ghost" onClick={() => update("karma", (form.karma ?? 0) + 1)} data-testid="button-karma-inc">
+                    <span>+</span>
+                  </Button>
                 </div>
               </div>
             </Card>

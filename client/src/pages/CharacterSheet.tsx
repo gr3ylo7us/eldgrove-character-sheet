@@ -1,4 +1,5 @@
 import { useCharacter, useUpdateCharacter } from "@/hooks/use-characters";
+import { RulesTooltip } from "@/components/RulesTooltip";
 import { useParams, Link, useLocation } from "wouter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -45,7 +46,7 @@ function StatBlock({ label, value, onChange, statKey }: { label: string; value: 
   return (
     <div className="flex flex-col items-center gap-1 p-3 bg-secondary/30 rounded border border-border/20">
       <Icon className="w-4 h-4 text-primary/70" />
-      <span className="text-xs font-mono text-muted-foreground uppercase tracking-wider">{label}</span>
+      <RulesTooltip ruleKey={statKey}><span className="text-xs font-mono text-muted-foreground uppercase tracking-wider">{label}</span></RulesTooltip>
       <div className="flex items-center gap-1">
         <Button size="icon" variant="ghost" onClick={() => onChange(Math.max(0, value - 1))} data-testid={`button-dec-${label}`}>
           <span className="text-lg">-</span>
@@ -59,12 +60,13 @@ function StatBlock({ label, value, onChange, statKey }: { label: string; value: 
   );
 }
 
-function DerivedStat({ label, value, icon }: { label: string; value: number | string; icon?: any }) {
+function DerivedStat({ label, value, icon, ruleKey }: { label: string; value: number | string; icon?: any; ruleKey?: string }) {
   const Icon = icon;
+  const labelEl = <span className="text-xs text-muted-foreground font-mono uppercase">{label}</span>;
   return (
     <div className="flex items-center gap-2 bg-secondary/50 px-3 py-2 rounded border border-border/10">
       {Icon && <Icon className="w-3.5 h-3.5 text-primary/60 shrink-0" />}
-      <span className="text-xs text-muted-foreground font-mono uppercase">{label}</span>
+      {ruleKey ? <RulesTooltip ruleKey={ruleKey}>{labelEl}</RulesTooltip> : labelEl}
       <span className="text-sm font-bold ml-auto">{value}</span>
     </div>
   );
@@ -86,7 +88,7 @@ function WoundBar({ wounds, maxWounds, onChange }: { wounds: number; maxWounds: 
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Activity className="w-4 h-4 text-red-400" />
-          <span className="text-sm font-semibold uppercase tracking-wider" style={{ fontFamily: "var(--font-display)" }}>Woundscale</span>
+          <RulesTooltip ruleKey="woundscale"><span className="text-sm font-semibold uppercase tracking-wider" style={{ fontFamily: "var(--font-display)" }}>Woundscale</span></RulesTooltip>
         </div>
         <Badge variant="outline" className="text-xs" data-testid="text-wound-stage">{currentStage}</Badge>
       </div>
@@ -145,7 +147,7 @@ function SkulkTracker({ skulkMax, skulkCurrent, derivedSkulk, onMaxChange, onCur
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <EyeOff className="w-4 h-4 text-primary/60" />
-          <span className="text-sm font-semibold uppercase tracking-wider" style={{ fontFamily: "var(--font-display)" }}>Skulk</span>
+          <RulesTooltip ruleKey="skulk"><span className="text-sm font-semibold uppercase tracking-wider" style={{ fontFamily: "var(--font-display)" }}>Skulk</span></RulesTooltip>
         </div>
         <Badge variant="outline" className="text-xs">Roll Target: {derivedSkulk}D</Badge>
       </div>
@@ -193,11 +195,12 @@ interface SelectedArchetype {
   selectedFeatures: string[];
 }
 
-function SectionHeader({ icon: Icon, label }: { icon: any; label: string }) {
+function SectionHeader({ icon: Icon, label, ruleKey }: { icon: any; label: string; ruleKey?: string }) {
+  const labelEl = <h3 className="text-sm text-muted-foreground uppercase tracking-wider" style={{ fontFamily: "var(--font-display)" }}>{label}</h3>;
   return (
     <div className="flex items-center gap-2 mb-3">
       <Icon className="w-4 h-4 text-primary/70" />
-      <h3 className="text-sm text-muted-foreground uppercase tracking-wider" style={{ fontFamily: "var(--font-display)" }}>{label}</h3>
+      {ruleKey ? <RulesTooltip ruleKey={ruleKey}>{labelEl}</RulesTooltip> : labelEl}
     </div>
   );
 }
@@ -310,7 +313,7 @@ export default function CharacterSheetPage() {
           <div className="flex items-center gap-3 flex-wrap">
             <div className="flex items-center gap-2 text-sm">
               <Star className="w-3.5 h-3.5 text-primary/60" />
-              <span className="text-muted-foreground font-mono">LVL</span>
+              <RulesTooltip ruleKey="level"><span className="text-muted-foreground font-mono">LVL</span></RulesTooltip>
               <Input type="number" className="w-14 text-center" value={form.level ?? 1} onChange={e => update("level", parseInt(e.target.value) || 1)} data-testid="input-level" />
             </div>
             <Link href={`/datacard/${id}`}>
@@ -371,20 +374,20 @@ export default function CharacterSheetPage() {
             </Card>
 
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-              <DerivedStat label="Reflexes" value={getReflexes(c)} icon={Zap} />
-              <DerivedStat label="Seek" value={getSeek(c)} icon={Crosshair} />
-              <DerivedStat label="Nerve" value={getNerve(c)} icon={Shield} />
-              <DerivedStat label="Health" value={getHealth(c)} icon={Heart} />
-              <DerivedStat label="Will" value={getWill(c)} icon={Brain} />
-              <DerivedStat label="Aptitude" value={getAptitude(c)} icon={BookOpen} />
-              <DerivedStat label="Move" value={`${getMove(c)}m`} icon={Footprints} />
-              <DerivedStat label="Evade" value={getEvade(c)} icon={Shield} />
-              <DerivedStat label="Seele Max" value={getSeeleMax(c)} icon={Sparkles} />
+              <DerivedStat label="Reflexes" value={getReflexes(c)} icon={Zap} ruleKey="reflexes" />
+              <DerivedStat label="Seek" value={getSeek(c)} icon={Crosshair} ruleKey="seek" />
+              <DerivedStat label="Nerve" value={getNerve(c)} icon={Shield} ruleKey="nerve" />
+              <DerivedStat label="Health" value={getHealth(c)} icon={Heart} ruleKey="health" />
+              <DerivedStat label="Will" value={getWill(c)} icon={Brain} ruleKey="will" />
+              <DerivedStat label="Aptitude" value={getAptitude(c)} icon={BookOpen} ruleKey="aptitude" />
+              <DerivedStat label="Move" value={`${getMove(c)}m`} icon={Footprints} ruleKey="move" />
+              <DerivedStat label="Evade" value={getEvade(c)} icon={Shield} ruleKey="evade" />
+              <DerivedStat label="Seele Max" value={getSeeleMax(c)} icon={Sparkles} ruleKey="seele" />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Card className="p-5">
-                <SectionHeader icon={Sparkles} label="Seele" />
+                <SectionHeader icon={Sparkles} label="Seele" ruleKey="seele" />
                 <div className="flex items-center gap-2">
                   <Input type="number" className="w-16 text-center" value={form.seeleCurrent ?? 0}
                     onChange={e => update("seeleCurrent", parseInt(e.target.value) || 0)} data-testid="input-seele-current" />
@@ -419,12 +422,12 @@ export default function CharacterSheetPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex items-center gap-2">
                   <Crown className="w-3.5 h-3.5 text-primary/60" />
-                  <span className="text-xs text-muted-foreground">Renown</span>
+                  <RulesTooltip ruleKey="renown"><span className="text-xs text-muted-foreground">Renown</span></RulesTooltip>
                   <Input type="number" className="w-16 text-center" value={form.renown ?? 0} onChange={e => update("renown", parseInt(e.target.value) || 0)} data-testid="input-renown" />
                 </div>
                 <div className="flex items-center gap-2">
                   <Star className="w-3.5 h-3.5 text-primary/60" />
-                  <span className="text-xs text-muted-foreground">Karma</span>
+                  <RulesTooltip ruleKey="karma"><span className="text-xs text-muted-foreground">Karma</span></RulesTooltip>
                   <Input type="number" className="w-16 text-center" value={form.karma ?? 0} onChange={e => update("karma", parseInt(e.target.value) || 0)} data-testid="input-karma" />
                 </div>
               </div>
@@ -450,8 +453,8 @@ export default function CharacterSheetPage() {
               </Select>
               {form.armorName && (
                 <div className="mt-3 flex items-center gap-3 flex-wrap">
-                  <Badge variant="secondary"><Shield className="w-3 h-3 mr-1" /> Prot: {form.armorProtection}</Badge>
-                  <Badge variant="secondary"><Footprints className="w-3 h-3 mr-1" /> Eva Dice: {form.armorEvasionDice}</Badge>
+                  <Badge variant="secondary"><Shield className="w-3 h-3 mr-1" /> <RulesTooltip ruleKey="protection">Prot:</RulesTooltip> {form.armorProtection}</Badge>
+                  <Badge variant="secondary"><Footprints className="w-3 h-3 mr-1" /> <RulesTooltip ruleKey="evasionDice">Eva Dice:</RulesTooltip> {form.armorEvasionDice}</Badge>
                   {form.armorEffects && <p className="text-xs text-muted-foreground italic mt-1 w-full">{form.armorEffects}</p>}
                 </div>
               )}
@@ -483,8 +486,8 @@ export default function CharacterSheetPage() {
                         <Badge variant="outline" className="text-xs">{w.type}</Badge>
                       </div>
                       <div className="flex flex-wrap gap-2 mt-2">
-                        <Badge variant="secondary" className="text-xs"><Target className="w-3 h-3 mr-1" /> ATK: {getWeaponAttack(c, w)}</Badge>
-                        <Badge variant="secondary" className="text-xs"><Flame className="w-3 h-3 mr-1" /> DMG: {w.normalDamage}/{w.critDamage}</Badge>
+                        <Badge variant="secondary" className="text-xs"><Target className="w-3 h-3 mr-1" /> <RulesTooltip ruleKey="weaponAttack">ATK:</RulesTooltip> {getWeaponAttack(c, w)}</Badge>
+                        <Badge variant="secondary" className="text-xs"><Flame className="w-3 h-3 mr-1" /> <RulesTooltip ruleKey="weaponDamage">DMG:</RulesTooltip> {w.normalDamage}/{w.critDamage}</Badge>
                         <Badge variant="secondary" className="text-xs">{w.damageType}</Badge>
                       </div>
                       {w.effects && <p className="text-xs text-muted-foreground/70 italic mt-2">{w.effects}</p>}
@@ -529,8 +532,8 @@ export default function CharacterSheetPage() {
                           </div>
                           {lang && (
                             <div className="flex flex-wrap gap-2 mt-2">
-                              <Badge variant="secondary" className="text-xs"><Target className="w-3 h-3 mr-1" /> Cast: {getSpellCast(c, lang)}</Badge>
-                              <Badge variant="secondary" className="text-xs">Diff: {lang.difficulty}</Badge>
+                              <Badge variant="secondary" className="text-xs"><Target className="w-3 h-3 mr-1" /> <RulesTooltip ruleKey="spellCast">Cast:</RulesTooltip> {getSpellCast(c, lang)}</Badge>
+                              <Badge variant="secondary" className="text-xs"><RulesTooltip ruleKey="spellCost">Diff:</RulesTooltip> {lang.difficulty}</Badge>
                               {lang.damage && <Badge variant="secondary" className="text-xs"><Flame className="w-3 h-3 mr-1" /> DMG: {lang.damage}</Badge>}
                             </div>
                           )}
@@ -552,7 +555,7 @@ export default function CharacterSheetPage() {
           <TabsContent value="skills" className="space-y-4">
             <Card className="p-5">
               <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
-                <SectionHeader icon={BookOpen} label="Skills" />
+                <SectionHeader icon={BookOpen} label="Skills" ruleKey="skills" />
                 <Select onValueChange={addSkill} data-testid="select-add-skill">
                   <SelectTrigger className="w-52" data-testid="select-add-skill-trigger">
                     <SelectValue placeholder="Add skill..." />
@@ -610,7 +613,7 @@ export default function CharacterSheetPage() {
           <TabsContent value="abilities" className="space-y-4">
             <Card className="p-5">
               <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
-                <SectionHeader icon={Crown} label="Archetypes" />
+                <SectionHeader icon={Crown} label="Archetypes" ruleKey="archetypes" />
                 <Select onValueChange={addArchetype} data-testid="select-add-archetype">
                   <SelectTrigger className="w-52" data-testid="select-add-archetype-trigger">
                     <SelectValue placeholder="Add archetype..." />
@@ -680,7 +683,7 @@ export default function CharacterSheetPage() {
 
             <Card className="p-5">
               <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
-                <SectionHeader icon={Feather} label="Feats" />
+                <SectionHeader icon={Feather} label="Feats" ruleKey="feats" />
                 <Select onValueChange={v => { if (!knownFeats.includes(v)) update("knownFeats", [...knownFeats, v]); }}>
                   <SelectTrigger className="w-48" data-testid="select-add-feat"><SelectValue placeholder="Add feat..." /></SelectTrigger>
                   <SelectContent>
@@ -715,7 +718,7 @@ export default function CharacterSheetPage() {
 
             <Card className="p-5">
               <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
-                <SectionHeader icon={Target} label="Maneuvers" />
+                <SectionHeader icon={Target} label="Maneuvers" ruleKey="maneuvers" />
                 <Select onValueChange={v => { if (!knownManeuvers.includes(v)) update("knownManeuvers", [...knownManeuvers, v]); }}>
                   <SelectTrigger className="w-48" data-testid="select-add-maneuver"><SelectValue placeholder="Add maneuver..." /></SelectTrigger>
                   <SelectContent>

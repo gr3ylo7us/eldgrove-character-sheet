@@ -25,6 +25,10 @@ client/src/
     use-game-data.ts   - Reference data query hooks
   lib/
     formulas.ts        - Game mechanic calculations (derived stats, weapon attacks, spell casting)
+    rules.ts           - Centralized rules/tooltip data map for all game mechanics
+  components/
+    RulesTooltip.tsx   - Reusable tooltip component showing formulas/descriptions on hover
+    CompendiumDrawer.tsx - Global slide-out Compendium overlay accessible from any page
 server/
   routes.ts   - All API routes for characters + reference data
   storage.ts  - Database storage interface
@@ -72,3 +76,8 @@ data/csv/     - Source CSV files for game reference data
   - Seele bar: Visual progress bar for current/max Seele
   - Icons throughout: Stat icons (Flame, Heart, Brain, etc.), section headers, weapon badges
   - Schema additions: skulkMax, skulkCurrent, selectedArchetypes fields
+- Feb 2026: Tooltips & Global Compendium
+  - RulesTooltip: Hoverable tooltips on all stat labels, derived stats, combat values showing formulas/descriptions/usage
+  - rules.ts: Centralized data map with 30+ rule entries covering stats, derived attributes, combat, magic, resources, trackers
+  - CompendiumDrawer: Global slide-out overlay accessible from any page via floating button (bottom-right)
+  - Drawer includes tabs for Rules, Weapons, Armor, Skills, Languages, Feats, Archetypes with search

@@ -10,11 +10,13 @@ import { Input } from "@/components/ui/input";
 import { ArrowLeft, Swords, BookOpen, Shield, Heart, Zap, Sparkles, Minus, Plus, Activity, Wand2, Languages } from "lucide-react";
 import { STAT_LABELS, getReflexes, getSeek, getNerve, getHealth, getWill, getAptitude, getMove, getEvade, getSkulk, getSeeleMax, getWeaponAttack, getSpellCast, getWoundscaleThreshold } from "@/lib/formulas";
 import type { Character } from "@shared/schema";
+import { RulesTooltip } from "@/components/RulesTooltip";
 
-function ResourceTracker({ label, current, max, onChange, icon }: { label: string; current: number; max: number; onChange: (v: number) => void; icon?: any }) {
+function ResourceTracker({ label, testId, current, max, onChange, icon }: { label: React.ReactNode; testId?: string; current: number; max: number; onChange: (v: number) => void; icon?: any }) {
   const Icon = icon;
   const pct = max > 0 ? Math.min(100, (current / max) * 100) : 0;
   const color = pct > 60 ? "bg-primary" : pct > 30 ? "bg-yellow-600" : "bg-destructive";
+  const tid = testId ?? "resource";
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between gap-2">
@@ -23,11 +25,11 @@ function ResourceTracker({ label, current, max, onChange, icon }: { label: strin
           <span className="text-xs font-mono uppercase text-muted-foreground">{label}</span>
         </div>
         <div className="flex items-center gap-1">
-          <Button size="icon" variant="ghost" onClick={() => onChange(Math.max(0, current - 1))} data-testid={`button-dec-${label}`}>
+          <Button size="icon" variant="ghost" onClick={() => onChange(Math.max(0, current - 1))} data-testid={`button-dec-${tid}`}>
             <Minus className="w-3 h-3" />
           </Button>
           <span className="text-sm font-bold w-10 text-center">{current}/{max}</span>
-          <Button size="icon" variant="ghost" onClick={() => onChange(Math.min(max, current + 1))} data-testid={`button-inc-${label}`}>
+          <Button size="icon" variant="ghost" onClick={() => onChange(Math.min(max, current + 1))} data-testid={`button-inc-${tid}`}>
             <Plus className="w-3 h-3" />
           </Button>
         </div>
@@ -82,7 +84,7 @@ function DatacardWoundBar({ wounds, onChange }: { wounds: number; onChange: (v: 
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Activity className="w-4 h-4 text-red-400" />
-          <span className="text-xs font-mono text-muted-foreground uppercase">Woundscale</span>
+          <RulesTooltip ruleKey="woundscale"><span className="text-xs font-mono text-muted-foreground uppercase">Woundscale</span></RulesTooltip>
         </div>
         <Badge variant="outline" className="text-xs" data-testid="datacard-wound-stage">{currentStage}</Badge>
       </div>
@@ -156,7 +158,7 @@ function CombatDatacard({ character, onUpdate }: { character: Character; onUpdat
           <div className="grid grid-cols-3 gap-2">
             {(["power", "finesse", "vitality"] as const).map(key => (
               <div key={key} className="text-center">
-                <span className="text-[10px] font-mono text-muted-foreground uppercase">{STAT_LABELS[key]}</span>
+                <span className="text-[10px] font-mono text-muted-foreground uppercase"><RulesTooltip ruleKey={key}>{STAT_LABELS[key]}</RulesTooltip></span>
                 <div className="text-xl font-bold text-primary" style={{ fontFamily: "var(--font-display)" }}>{(c as any)[key] ?? 1}</div>
               </div>
             ))}
@@ -167,7 +169,7 @@ function CombatDatacard({ character, onUpdate }: { character: Character; onUpdat
           <div className="grid grid-cols-3 gap-2">
             {(["acumen", "diplomacy", "intuition"] as const).map(key => (
               <div key={key} className="text-center">
-                <span className="text-[10px] font-mono text-muted-foreground uppercase">{STAT_LABELS[key]}</span>
+                <span className="text-[10px] font-mono text-muted-foreground uppercase"><RulesTooltip ruleKey={key}>{STAT_LABELS[key]}</RulesTooltip></span>
                 <div className="text-xl font-bold text-primary" style={{ fontFamily: "var(--font-display)" }}>{(c as any)[key] ?? 1}</div>
               </div>
             ))}
@@ -178,7 +180,7 @@ function CombatDatacard({ character, onUpdate }: { character: Character; onUpdat
           <div className="grid grid-cols-3 gap-2">
             {(["talent", "moxie", "audacity"] as const).map(key => (
               <div key={key} className="text-center">
-                <span className="text-[10px] font-mono text-muted-foreground uppercase">{STAT_LABELS[key]}</span>
+                <span className="text-[10px] font-mono text-muted-foreground uppercase"><RulesTooltip ruleKey={key}>{STAT_LABELS[key]}</RulesTooltip></span>
                 <div className="text-xl font-bold text-primary" style={{ fontFamily: "var(--font-display)" }}>{(c as any)[key] ?? (key === "talent" ? 0 : 1)}</div>
               </div>
             ))}
@@ -186,15 +188,15 @@ function CombatDatacard({ character, onUpdate }: { character: Character; onUpdat
         </div>
       </div>
 
-      <ResourceTracker label="Seele" current={c.seeleCurrent ?? 0} max={seeleMax} onChange={v => onUpdate("seeleCurrent", v)} icon={Sparkles} />
+      <ResourceTracker label={<RulesTooltip ruleKey="seele">Seele</RulesTooltip>} testId="seele" current={c.seeleCurrent ?? 0} max={seeleMax} onChange={v => onUpdate("seeleCurrent", v)} icon={Sparkles} />
 
       <DatacardWoundBar wounds={c.woundsCurrent ?? 0} onChange={v => onUpdate("woundsCurrent", v)} />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-center">
-        <Card className="p-2"><span className="text-[10px] text-muted-foreground font-mono">EVADE</span><div className="text-lg font-bold">{getEvade(c)}</div></Card>
-        <Card className="p-2"><span className="text-[10px] text-muted-foreground font-mono">PROT</span><div className="text-lg font-bold">{c.armorProtection ?? 0}</div></Card>
-        <Card className="p-2"><span className="text-[10px] text-muted-foreground font-mono">MOVE</span><div className="text-lg font-bold">{getMove(c)}"</div></Card>
-        <Card className="p-2"><span className="text-[10px] text-muted-foreground font-mono">NERVE</span><div className="text-lg font-bold">{getNerve(c)}</div></Card>
+        <Card className="p-2"><span className="text-[10px] text-muted-foreground font-mono"><RulesTooltip ruleKey="evade">EVADE</RulesTooltip></span><div className="text-lg font-bold">{getEvade(c)}</div></Card>
+        <Card className="p-2"><span className="text-[10px] text-muted-foreground font-mono"><RulesTooltip ruleKey="protection">PROT</RulesTooltip></span><div className="text-lg font-bold">{c.armorProtection ?? 0}</div></Card>
+        <Card className="p-2"><span className="text-[10px] text-muted-foreground font-mono"><RulesTooltip ruleKey="move">MOVE</RulesTooltip></span><div className="text-lg font-bold">{getMove(c)}"</div></Card>
+        <Card className="p-2"><span className="text-[10px] text-muted-foreground font-mono"><RulesTooltip ruleKey="nerve">NERVE</RulesTooltip></span><div className="text-lg font-bold">{getNerve(c)}</div></Card>
       </div>
 
       <Card className="p-4">
@@ -205,8 +207,8 @@ function CombatDatacard({ character, onUpdate }: { character: Character; onUpdat
               <div>
                 <span className="text-sm font-semibold">{w.name}</span>
                 <div className="flex gap-2 text-xs text-muted-foreground mt-0.5">
-                  <span>ATK: {getWeaponAttack(c, w)}</span>
-                  <span>DMG: {w.normalDamage}/{w.critDamage}</span>
+                  <span><RulesTooltip ruleKey="weaponAttack">ATK:</RulesTooltip> {getWeaponAttack(c, w)}</span>
+                  <span><RulesTooltip ruleKey="weaponDamage">DMG:</RulesTooltip> {w.normalDamage}/{w.critDamage}</span>
                 </div>
               </div>
               <div className="text-right text-xs text-muted-foreground shrink-0">
@@ -218,7 +220,7 @@ function CombatDatacard({ character, onUpdate }: { character: Character; onUpdat
       </Card>
 
       <Card className="p-4">
-        <h4 className="text-xs font-mono text-muted-foreground uppercase mb-2">Maneuvers</h4>
+        <h4 className="text-xs font-mono text-muted-foreground uppercase mb-2"><RulesTooltip ruleKey="maneuvers">Maneuvers</RulesTooltip></h4>
         <div className="space-y-1">
           {knownManeuvers.map((mname, i) => {
             const man = allManeuvers?.find(m => m.name === mname);
@@ -228,7 +230,7 @@ function CombatDatacard({ character, onUpdate }: { character: Character; onUpdat
                   <span className="font-semibold">{mname}</span>
                   {man && <p className="text-xs text-muted-foreground mt-0.5">{man.effect}</p>}
                 </div>
-                {man && <span className="text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded shrink-0">{man.seeleCost}</span>}
+                {man && <span className="text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded shrink-0"><RulesTooltip ruleKey="maneuvers">{man.seeleCost}</RulesTooltip></span>}
               </div>
             );
           })}
@@ -254,9 +256,9 @@ function CombatDatacard({ character, onUpdate }: { character: Character; onUpdat
                       <Badge variant="outline" className="text-xs">{lang.domain}</Badge>
                     </div>
                     <div className="flex gap-2 shrink-0">
-                      <Badge variant="secondary" className="text-xs">Cast: {getSpellCast(c, lang)}</Badge>
-                      <Badge variant="secondary" className="text-xs">Diff: {lang.difficulty}</Badge>
-                      {lang.damage && <Badge variant="secondary" className="text-xs">DMG: {lang.damage}</Badge>}
+                      <Badge variant="secondary" className="text-xs"><RulesTooltip ruleKey="spellCast">Cast:</RulesTooltip> {getSpellCast(c, lang)}</Badge>
+                      <Badge variant="secondary" className="text-xs"><RulesTooltip ruleKey="spellCost">Diff:</RulesTooltip> {lang.difficulty}</Badge>
+                      {lang.damage && <Badge variant="secondary" className="text-xs"><RulesTooltip ruleKey="weaponDamage">DMG:</RulesTooltip> {lang.damage}</Badge>}
                     </div>
                   </div>
                   {lang.tags && <div className="flex flex-wrap gap-1 mt-1.5">{(lang.tags as string).split(",").map((t, ti) => <Badge key={ti} variant="outline" className="text-[10px]">{t.trim()}</Badge>)}</div>}
@@ -299,7 +301,7 @@ function RoleplayDatacard({ character, onUpdate }: { character: Character; onUpd
           <div className="grid grid-cols-3 gap-2">
             {(["power", "finesse", "vitality"] as const).map(key => (
               <div key={key} className="text-center">
-                <span className="text-[10px] font-mono text-muted-foreground uppercase">{STAT_LABELS[key]}</span>
+                <span className="text-[10px] font-mono text-muted-foreground uppercase"><RulesTooltip ruleKey={key}>{STAT_LABELS[key]}</RulesTooltip></span>
                 <div className="text-xl font-bold text-primary" style={{ fontFamily: "var(--font-display)" }}>{(c as any)[key] ?? 1}</div>
               </div>
             ))}
@@ -310,7 +312,7 @@ function RoleplayDatacard({ character, onUpdate }: { character: Character; onUpd
           <div className="grid grid-cols-3 gap-2">
             {(["acumen", "diplomacy", "intuition"] as const).map(key => (
               <div key={key} className="text-center">
-                <span className="text-[10px] font-mono text-muted-foreground uppercase">{STAT_LABELS[key]}</span>
+                <span className="text-[10px] font-mono text-muted-foreground uppercase"><RulesTooltip ruleKey={key}>{STAT_LABELS[key]}</RulesTooltip></span>
                 <div className="text-xl font-bold text-primary" style={{ fontFamily: "var(--font-display)" }}>{(c as any)[key] ?? 1}</div>
               </div>
             ))}
@@ -321,7 +323,7 @@ function RoleplayDatacard({ character, onUpdate }: { character: Character; onUpd
           <div className="grid grid-cols-3 gap-2">
             {(["talent", "moxie", "audacity"] as const).map(key => (
               <div key={key} className="text-center">
-                <span className="text-[10px] font-mono text-muted-foreground uppercase">{STAT_LABELS[key]}</span>
+                <span className="text-[10px] font-mono text-muted-foreground uppercase"><RulesTooltip ruleKey={key}>{STAT_LABELS[key]}</RulesTooltip></span>
                 <div className="text-xl font-bold text-primary" style={{ fontFamily: "var(--font-display)" }}>{(c as any)[key] ?? (key === "talent" ? 0 : 1)}</div>
               </div>
             ))}
@@ -330,24 +332,24 @@ function RoleplayDatacard({ character, onUpdate }: { character: Character; onUpd
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <ResourceTracker label="Seele" current={c.seeleCurrent ?? 0} max={seeleMax} onChange={v => onUpdate("seeleCurrent", v)} icon={Sparkles} />
+        <ResourceTracker label={<RulesTooltip ruleKey="seele">Seele</RulesTooltip>} testId="seele" current={c.seeleCurrent ?? 0} max={seeleMax} onChange={v => onUpdate("seeleCurrent", v)} icon={Sparkles} />
         <div className="space-y-1">
           <div className="flex justify-between items-center">
-            <span className="text-xs font-mono text-muted-foreground uppercase">Renown / Karma</span>
+            <span className="text-xs font-mono text-muted-foreground uppercase"><RulesTooltip ruleKey="renown">Renown</RulesTooltip> / <RulesTooltip ruleKey="karma">Karma</RulesTooltip></span>
             <span className="text-sm font-bold">{c.renown} / {c.karma}</span>
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-center">
-        <Card className="p-2"><span className="text-[10px] text-muted-foreground font-mono">SEEK</span><div className="text-lg font-bold">{getSeek(c)}</div></Card>
-        <Card className="p-2"><span className="text-[10px] text-muted-foreground font-mono">WILL</span><div className="text-lg font-bold">{getWill(c)}</div></Card>
-        <Card className="p-2"><span className="text-[10px] text-muted-foreground font-mono">APT</span><div className="text-lg font-bold">{getAptitude(c)}</div></Card>
-        <Card className="p-2"><span className="text-[10px] text-muted-foreground font-mono">SKULK</span><div className="text-lg font-bold">{c.skulkCurrent ?? 0}/{c.skulkMax ?? 0}</div></Card>
+        <Card className="p-2"><span className="text-[10px] text-muted-foreground font-mono"><RulesTooltip ruleKey="seek">SEEK</RulesTooltip></span><div className="text-lg font-bold">{getSeek(c)}</div></Card>
+        <Card className="p-2"><span className="text-[10px] text-muted-foreground font-mono"><RulesTooltip ruleKey="will">WILL</RulesTooltip></span><div className="text-lg font-bold">{getWill(c)}</div></Card>
+        <Card className="p-2"><span className="text-[10px] text-muted-foreground font-mono"><RulesTooltip ruleKey="aptitude">APT</RulesTooltip></span><div className="text-lg font-bold">{getAptitude(c)}</div></Card>
+        <Card className="p-2"><span className="text-[10px] text-muted-foreground font-mono"><RulesTooltip ruleKey="skulk">SKULK</RulesTooltip></span><div className="text-lg font-bold">{c.skulkCurrent ?? 0}/{c.skulkMax ?? 0}</div></Card>
       </div>
 
       <Card className="p-4">
-        <h4 className="text-xs font-mono text-muted-foreground uppercase mb-2">Skills</h4>
+        <h4 className="text-xs font-mono text-muted-foreground uppercase mb-2"><RulesTooltip ruleKey="skills">Skills</RulesTooltip></h4>
         <div className="grid grid-cols-2 gap-1">
           {nonZeroSkills.map(([name, tier]) => (
             <div key={name} className="flex justify-between px-2 py-1 bg-secondary/20 rounded text-sm">
@@ -369,7 +371,7 @@ function RoleplayDatacard({ character, onUpdate }: { character: Character; onUpd
                   <span className="font-semibold">{lname}</span>
                   {lang && <span className="text-xs text-muted-foreground ml-2">({lang.domain})</span>}
                 </div>
-                {lang && <span className="text-xs font-mono">Cast: {getSpellCast(c, lang)}</span>}
+                {lang && <span className="text-xs font-mono"><RulesTooltip ruleKey="spellCast">Cast:</RulesTooltip> {getSpellCast(c, lang)}</span>}
               </div>
             );
           })}
@@ -377,7 +379,7 @@ function RoleplayDatacard({ character, onUpdate }: { character: Character; onUpd
       </Card>
 
       <Card className="p-4">
-        <h4 className="text-xs font-mono text-muted-foreground uppercase mb-2">Feats</h4>
+        <h4 className="text-xs font-mono text-muted-foreground uppercase mb-2"><RulesTooltip ruleKey="feats">Feats</RulesTooltip></h4>
         <div className="space-y-1">
           {knownFeats.map((fname, i) => {
             const feat = allFeats?.find(f => f.name === fname);
@@ -393,7 +395,7 @@ function RoleplayDatacard({ character, onUpdate }: { character: Character; onUpd
 
       {archetypeFeatures.length > 0 && (
         <Card className="p-4">
-          <h4 className="text-xs font-mono text-muted-foreground uppercase mb-2">Archetype Features</h4>
+          <h4 className="text-xs font-mono text-muted-foreground uppercase mb-2"><RulesTooltip ruleKey="archetypes">Archetype Features</RulesTooltip></h4>
           <div className="space-y-1">
             {archetypeFeatures.map((feat: string, i: number) => (
               <p key={i} className="text-sm text-muted-foreground px-2 py-1 bg-secondary/20 rounded">{feat}</p>

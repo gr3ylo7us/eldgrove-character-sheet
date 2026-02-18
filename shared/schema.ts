@@ -22,6 +22,8 @@ export const characters = pgTable("characters", {
   renown: integer("renown").default(0),
   karma: integer("karma").default(0),
   woundsCurrent: integer("wounds_current").default(0),
+  skulkMax: integer("skulk_max").default(0),
+  skulkCurrent: integer("skulk_current").default(0),
 
   armorName: text("armor_name").default(""),
   armorProtection: integer("armor_protection").default(0),
@@ -35,6 +37,7 @@ export const characters = pgTable("characters", {
   knownManeuvers: jsonb("known_maneuvers").default([]),
   inventory: jsonb("inventory").default([]),
   archetypeFeatures: jsonb("archetype_features").default([]),
+  selectedArchetypes: jsonb("selected_archetypes").default([]),
   notes: text("notes").default(""),
 });
 

@@ -261,7 +261,9 @@ export default function CharacterSheetPage() {
   const inventory = (c.inventory as any[]) || [];
   const selectedArchetypes = (c.selectedArchetypes as SelectedArchetype[]) || [];
 
+  const MASTERY_SKILLS = ["Melee Mastery", "Ranged Mastery", "Arcane Mastery"];
   const addedSkillNames = Object.keys(skillTiers);
+  const nonMasterySkillNames = addedSkillNames.filter(s => !MASTERY_SKILLS.includes(s));
 
   const addArchetype = (name: string) => {
     const arch = allArchetypes?.find(a => a.name === name);
@@ -589,13 +591,71 @@ export default function CharacterSheetPage() {
           <TabsContent value="skills" className="space-y-4">
             <Card className="p-5">
               <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
+                <SectionHeader icon={Swords} label="Masteries" />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-2">
+                {MASTERY_SKILLS.map(mName => {
+                  const tier = skillTiers[mName] ?? 0;
+                  const hasMastery = tier > 0;
+                  const mIcon = mName === "Melee Mastery" ? Swords : mName === "Ranged Mastery" ? Crosshair : Wand2;
+                  const MIcon = mIcon;
+                  return (
+                    <div key={mName} className={`flex flex-col items-center gap-2 p-3 rounded border ${hasMastery ? "bg-primary/10 border-primary/30" : "bg-secondary/20 border-border/10"}`} data-testid={`mastery-${mName}`}>
+                      <MIcon className={`w-5 h-5 ${hasMastery ? "text-primary" : "text-muted-foreground/40"}`} />
+                      <span className="text-xs font-semibold text-center" style={{ fontFamily: "var(--font-display)" }}>{mName}</span>
+                      <Button
+                        size="sm"
+                        variant={hasMastery ? "default" : "outline"}
+                        className="toggle-elevate"
+                        onClick={() => {
+                          if (hasMastery) {
+                            const t = { ...skillTiers };
+                            delete t[mName];
+                            update("skillTiers", t);
+                          } else {
+                            update("skillTiers", { ...skillTiers, [mName]: 1 });
+                          }
+                        }}
+                        data-testid={`button-toggle-mastery-${mName}`}
+                      >
+                        {hasMastery ? "Trained" : "Untrained"}
+                      </Button>
+                      {hasMastery && (
+                        <div className="flex items-center gap-1">
+                          <Button size="icon" variant="ghost" onClick={() => {
+                            const t = { ...skillTiers, [mName]: Math.max(1, tier - 1) };
+                            update("skillTiers", t);
+                          }}>
+                            <span>-</span>
+                          </Button>
+                          <span className="w-6 text-center text-sm font-bold text-primary">{tier}</span>
+                          <Button size="icon" variant="ghost" onClick={() => {
+                            const t = { ...skillTiers, [mName]: tier + 1 };
+                            update("skillTiers", t);
+                          }}>
+                            <span>+</span>
+                          </Button>
+                          <Button size="icon" variant="ghost" onClick={() => rollDice({ poolSize: tier, label: `${mName} Check`, rollType: "skill" })} data-testid={`button-roll-skill-${mName}`}>
+                            <Dices className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="text-[10px] text-muted-foreground/60 italic text-center mb-4">Trained masteries allow exceeding the action limit for their respective attack type per turn.</p>
+            </Card>
+
+            <Card className="p-5">
+              <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
                 <SectionHeader icon={BookOpen} label="Skills" ruleKey="skills" />
                 <Select onValueChange={addSkill} data-testid="select-add-skill">
                   <SelectTrigger className="w-52" data-testid="select-add-skill-trigger">
                     <SelectValue placeholder="Add skill..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {allSkills?.filter(s => !addedSkillNames.includes(s.name)).map(s => (
+                    {allSkills?.filter(s => !addedSkillNames.includes(s.name) && !MASTERY_SKILLS.includes(s.name)).map(s => (
                       <SelectItem key={s.id} value={s.name}>
                         {s.name} ({s.stat})
                       </SelectItem>
@@ -604,10 +664,10 @@ export default function CharacterSheetPage() {
                 </Select>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {addedSkillNames.length === 0 && (
+                {nonMasterySkillNames.length === 0 && (
                   <p className="text-xs text-muted-foreground italic col-span-2 text-center py-6">No skills added yet. Use the dropdown above to add skills your character has trained.</p>
                 )}
-                {addedSkillNames.map(sName => {
+                {nonMasterySkillNames.map(sName => {
                   const tier = skillTiers[sName] ?? 0;
                   const skillData = allSkills?.find(s => s.name === sName);
                   return (

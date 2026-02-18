@@ -866,7 +866,7 @@ export default function CharacterSheetPage() {
                 <Select onValueChange={v => { if (!knownManeuvers.includes(v)) update("knownManeuvers", [...knownManeuvers, v]); }}>
                   <SelectTrigger className="w-48" data-testid="select-add-maneuver"><SelectValue placeholder="Add maneuver..." /></SelectTrigger>
                   <SelectContent>
-                    {allManeuvers?.filter(m => !knownManeuvers.includes(m.name)).map(m => <SelectItem key={m.id} value={m.name}>{m.name}</SelectItem>)}
+                    {allManeuvers?.filter(m => !knownManeuvers.includes(m.name) && (!m.prerequisite || knownFeats.includes(m.prerequisite))).map(m => <SelectItem key={m.id} value={m.name}>{m.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>

@@ -1,5 +1,6 @@
 import session from "express-session";
-import * as passport from "passport";
+// @ts-ignore - passport is CJS
+import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import type { Express, RequestHandler } from "express";
 import createMemoryStore from "memorystore";

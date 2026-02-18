@@ -1,5 +1,6 @@
 import { useCharacter, useUpdateCharacter } from "@/hooks/use-characters";
 import { useDiceRoller } from "@/components/DiceRoller";
+import type { RollOptions } from "@/components/DiceRoller";
 import { RulesTooltip } from "@/components/RulesTooltip";
 import { useParams, Link, useLocation } from "wouter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -42,7 +43,7 @@ const WOUNDSCALE_STAGES = [
   { label: "Death's Door", max: 30, color: "bg-red-900" },
 ];
 
-function StatBlock({ label, value, onChange, statKey, rollDice }: { label: string; value: number; onChange: (v: number) => void; statKey: string; rollDice?: (pool: number, label: string) => void }) {
+function StatBlock({ label, value, onChange, statKey, rollDice }: { label: string; value: number; onChange: (v: number) => void; statKey: string; rollDice?: (opts: RollOptions) => void }) {
   const Icon = STAT_ICONS[statKey] || Zap;
   return (
     <div className="flex flex-col items-center gap-1 p-3 bg-secondary/30 rounded border border-border/20">
@@ -58,7 +59,7 @@ function StatBlock({ label, value, onChange, statKey, rollDice }: { label: strin
         </Button>
       </div>
       {rollDice && (
-        <Button size="icon" variant="ghost" onClick={() => rollDice(value, `${label} Roll`)} data-testid={`button-roll-stat-${statKey}`}>
+        <Button size="icon" variant="ghost" onClick={() => rollDice({ poolSize: value, label: `${label} Roll`, rollType: "stat" })} data-testid={`button-roll-stat-${statKey}`}>
           <Dices className="w-3 h-3" />
         </Button>
       )}
@@ -386,7 +387,14 @@ export default function CharacterSheetPage() {
               <DerivedStat label="Nerve" value={getNerve(c)} icon={Shield} ruleKey="nerve" />
               <DerivedStat label="Will" value={getWill(c)} icon={Brain} ruleKey="will" />
               <DerivedStat label="Move" value={`${getMove(c)}m`} icon={Footprints} ruleKey="move" />
-              <DerivedStat label="Evade" value={getEvade(c)} icon={Shield} ruleKey="evade" />
+              <div className="flex items-center gap-2 bg-secondary/50 px-3 py-2 rounded border border-border/10">
+                <Shield className="w-3.5 h-3.5 text-primary/60 shrink-0" />
+                <RulesTooltip ruleKey="evade"><span className="text-xs text-muted-foreground font-mono uppercase">Evade</span></RulesTooltip>
+                <span className="text-sm font-bold ml-auto">{getEvade(c)}</span>
+                <Button size="icon" variant="ghost" onClick={() => rollDice({ poolSize: getEvade(c), label: "Evade Roll", rollType: "evade" })} data-testid="button-roll-evade">
+                  <Dices className="w-3 h-3" />
+                </Button>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -497,7 +505,7 @@ export default function CharacterSheetPage() {
                       {w.effects && <p className="text-xs text-muted-foreground/70 italic mt-2">{w.effects}</p>}
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
-                      <Button size="icon" variant="ghost" onClick={() => rollDice(getWeaponAttack(c, w), `${w.name} Attack`, 11, w.effects ? [w.effects] : [])} data-testid={`button-roll-weapon-${i}`}>
+                      <Button size="icon" variant="ghost" onClick={() => rollDice({ poolSize: getWeaponAttack(c, w), label: `${w.name} Attack`, rollType: "weapon", effects: w.effects ? [w.effects] : [], damageInfo: { normalDamage: w.normalDamage, critDamage: w.critDamage, damageType: w.damageType } })} data-testid={`button-roll-weapon-${i}`}>
                         <Dices className="w-3 h-3" />
                       </Button>
                       <Button size="icon" variant="ghost" onClick={() => {
@@ -557,8 +565,8 @@ export default function CharacterSheetPage() {
                               variant="ghost"
                               disabled={(c.seeleCurrent ?? 0) < (lang.difficulty ?? 0)}
                               onClick={() => {
-                                update("seeleCurrent", (c.seeleCurrent ?? 0) - lang.difficulty);
-                                rollDice(getSpellCast(c, lang), `Cast ${lname}`, 11, lang.tags ? [lang.tags] : []);
+                                update("seeleCurrent", (c.seeleCurrent ?? 0) - (lang.difficulty || 0));
+                                rollDice({ poolSize: getSpellCast(c, lang), label: `Cast ${lname}`, rollType: "spell", effects: lang.tags ? [lang.tags] : [], damageInfo: lang.damage ? { languageDamage: lang.damage } : undefined });
                               }}
                               data-testid={`button-roll-spell-${lname}`}
                               className={(c.seeleCurrent ?? 0) < (lang.difficulty ?? 0) ? "text-destructive" : ""}
@@ -625,7 +633,7 @@ export default function CharacterSheetPage() {
                         }}>
                           <span>+</span>
                         </Button>
-                        <Button size="icon" variant="ghost" onClick={() => rollDice(tier, `${sName} Check`)} data-testid={`button-roll-skill-${sName}`}>
+                        <Button size="icon" variant="ghost" onClick={() => rollDice({ poolSize: tier, label: `${sName} Check`, rollType: "skill" })} data-testid={`button-roll-skill-${sName}`}>
                           <Dices className="w-3 h-3" />
                         </Button>
                         <Button size="icon" variant="ghost" onClick={() => removeSkill(sName)} data-testid={`button-remove-skill-${sName}`}>

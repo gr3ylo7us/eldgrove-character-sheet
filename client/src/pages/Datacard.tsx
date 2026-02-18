@@ -12,6 +12,7 @@ import { STAT_LABELS, getReflexes, getSeek, getNerve, getHealth, getWill, getApt
 import type { Character } from "@shared/schema";
 import { RulesTooltip } from "@/components/RulesTooltip";
 import { useDiceRoller } from "@/components/DiceRoller";
+import type { RollOptions } from "@/components/DiceRoller";
 
 function ResourceTracker({ label, testId, current, max, onChange, icon }: { label: React.ReactNode; testId?: string; current: number; max: number; onChange: (v: number) => void; icon?: any }) {
   const Icon = icon;
@@ -163,7 +164,7 @@ function CombatDatacard({ character, onUpdate }: { character: Character; onUpdat
                 <span className="text-[10px] font-mono text-muted-foreground uppercase"><RulesTooltip ruleKey={key}>{STAT_LABELS[key]}</RulesTooltip></span>
                 <div className="flex items-center justify-center gap-0.5">
                   <div className="text-xl font-bold text-primary" style={{ fontFamily: "var(--font-display)" }}>{(c as any)[key] ?? 1}</div>
-                  <Button size="icon" variant="ghost" onClick={() => rollDice((c as any)[key] ?? 1, `${STAT_LABELS[key]} Roll`)} data-testid={`button-roll-stat-${key}`}>
+                  <Button size="icon" variant="ghost" onClick={() => rollDice({ poolSize: (c as any)[key] ?? 1, label: `${STAT_LABELS[key]} Roll`, rollType: "stat" })} data-testid={`button-roll-stat-${key}`}>
                     <Dices className="w-3 h-3" />
                   </Button>
                 </div>
@@ -179,7 +180,7 @@ function CombatDatacard({ character, onUpdate }: { character: Character; onUpdat
                 <span className="text-[10px] font-mono text-muted-foreground uppercase"><RulesTooltip ruleKey={key}>{STAT_LABELS[key]}</RulesTooltip></span>
                 <div className="flex items-center justify-center gap-0.5">
                   <div className="text-xl font-bold text-primary" style={{ fontFamily: "var(--font-display)" }}>{(c as any)[key] ?? 1}</div>
-                  <Button size="icon" variant="ghost" onClick={() => rollDice((c as any)[key] ?? 1, `${STAT_LABELS[key]} Roll`)} data-testid={`button-roll-stat-${key}`}>
+                  <Button size="icon" variant="ghost" onClick={() => rollDice({ poolSize: (c as any)[key] ?? 1, label: `${STAT_LABELS[key]} Roll`, rollType: "stat" })} data-testid={`button-roll-stat-${key}`}>
                     <Dices className="w-3 h-3" />
                   </Button>
                 </div>
@@ -195,7 +196,7 @@ function CombatDatacard({ character, onUpdate }: { character: Character; onUpdat
                 <span className="text-[10px] font-mono text-muted-foreground uppercase"><RulesTooltip ruleKey={key}>{STAT_LABELS[key]}</RulesTooltip></span>
                 <div className="flex items-center justify-center gap-0.5">
                   <div className="text-xl font-bold text-primary" style={{ fontFamily: "var(--font-display)" }}>{(c as any)[key] ?? (key === "talent" ? 0 : 1)}</div>
-                  <Button size="icon" variant="ghost" onClick={() => rollDice((c as any)[key] ?? (key === "talent" ? 0 : 1), `${STAT_LABELS[key]} Roll`)} data-testid={`button-roll-stat-${key}`}>
+                  <Button size="icon" variant="ghost" onClick={() => rollDice({ poolSize: (c as any)[key] ?? (key === "talent" ? 0 : 1), label: `${STAT_LABELS[key]} Roll`, rollType: "stat" })} data-testid={`button-roll-stat-${key}`}>
                     <Dices className="w-3 h-3" />
                   </Button>
                 </div>
@@ -210,7 +211,15 @@ function CombatDatacard({ character, onUpdate }: { character: Character; onUpdat
       <DatacardWoundBar wounds={c.woundsCurrent ?? 0} onChange={v => onUpdate("woundsCurrent", v)} />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-center">
-        <Card className="p-2"><span className="text-[10px] text-muted-foreground font-mono"><RulesTooltip ruleKey="evade">EVADE</RulesTooltip></span><div className="text-lg font-bold">{getEvade(c)}</div></Card>
+        <Card className="p-2">
+          <span className="text-[10px] text-muted-foreground font-mono"><RulesTooltip ruleKey="evade">EVADE</RulesTooltip></span>
+          <div className="flex items-center justify-center gap-1">
+            <div className="text-lg font-bold">{getEvade(c)}</div>
+            <Button size="icon" variant="ghost" onClick={() => rollDice({ poolSize: getEvade(c), label: "Evade Roll", rollType: "evade" })} data-testid="button-roll-evade">
+              <Dices className="w-3 h-3" />
+            </Button>
+          </div>
+        </Card>
         <Card className="p-2"><span className="text-[10px] text-muted-foreground font-mono"><RulesTooltip ruleKey="protection">PROT</RulesTooltip></span><div className="text-lg font-bold">{c.armorProtection ?? 0}</div></Card>
         <Card className="p-2"><span className="text-[10px] text-muted-foreground font-mono"><RulesTooltip ruleKey="move">MOVE</RulesTooltip></span><div className="text-lg font-bold">{getMove(c)}"</div></Card>
         <Card className="p-2"><span className="text-[10px] text-muted-foreground font-mono"><RulesTooltip ruleKey="nerve">NERVE</RulesTooltip></span><div className="text-lg font-bold">{getNerve(c)}</div></Card>
@@ -229,7 +238,7 @@ function CombatDatacard({ character, onUpdate }: { character: Character; onUpdat
                 </div>
               </div>
               <div className="flex items-center gap-1 shrink-0">
-                <Button size="icon" variant="ghost" onClick={() => rollDice(getWeaponAttack(c, w), `${w.name} Attack`, 11, w.effects ? [w.effects] : [])} data-testid={`button-roll-weapon-${i}`}>
+                <Button size="icon" variant="ghost" onClick={() => rollDice({ poolSize: getWeaponAttack(c, w), label: `${w.name} Attack`, rollType: "weapon", effects: w.effects ? [w.effects] : [], damageInfo: { normalDamage: w.normalDamage, critDamage: w.critDamage, damageType: w.damageType } })} data-testid={`button-roll-weapon-${i}`}>
                   <Dices className="w-3 h-3" />
                 </Button>
                 <span className="text-xs text-muted-foreground">{w.damageType}</span>
@@ -284,8 +293,8 @@ function CombatDatacard({ character, onUpdate }: { character: Character; onUpdat
                         variant="ghost"
                         disabled={(c.seeleCurrent ?? 0) < (lang.difficulty ?? 0)}
                         onClick={() => {
-                          onUpdate("seeleCurrent", (c.seeleCurrent ?? 0) - lang.difficulty);
-                          rollDice(getSpellCast(c, lang), `Cast ${lname}`, 11, lang.tags ? [lang.tags] : []);
+                          onUpdate("seeleCurrent", (c.seeleCurrent ?? 0) - (lang.difficulty || 0));
+                          rollDice({ poolSize: getSpellCast(c, lang), label: `Cast ${lname}`, rollType: "spell", effects: lang.tags ? [lang.tags] : [], damageInfo: lang.damage ? { languageDamage: lang.damage } : undefined });
                         }}
                         data-testid={`button-roll-spell-${lname}`}
                         className={(c.seeleCurrent ?? 0) < (lang.difficulty ?? 0) ? "text-destructive" : ""}
@@ -338,7 +347,7 @@ function RoleplayDatacard({ character, onUpdate }: { character: Character; onUpd
                 <span className="text-[10px] font-mono text-muted-foreground uppercase"><RulesTooltip ruleKey={key}>{STAT_LABELS[key]}</RulesTooltip></span>
                 <div className="flex items-center justify-center gap-0.5">
                   <div className="text-xl font-bold text-primary" style={{ fontFamily: "var(--font-display)" }}>{(c as any)[key] ?? 1}</div>
-                  <Button size="icon" variant="ghost" onClick={() => rollDice((c as any)[key] ?? 1, `${STAT_LABELS[key]} Roll`)} data-testid={`button-roll-stat-${key}`}>
+                  <Button size="icon" variant="ghost" onClick={() => rollDice({ poolSize: (c as any)[key] ?? 1, label: `${STAT_LABELS[key]} Roll`, rollType: "stat" })} data-testid={`button-roll-stat-${key}`}>
                     <Dices className="w-3 h-3" />
                   </Button>
                 </div>
@@ -354,7 +363,7 @@ function RoleplayDatacard({ character, onUpdate }: { character: Character; onUpd
                 <span className="text-[10px] font-mono text-muted-foreground uppercase"><RulesTooltip ruleKey={key}>{STAT_LABELS[key]}</RulesTooltip></span>
                 <div className="flex items-center justify-center gap-0.5">
                   <div className="text-xl font-bold text-primary" style={{ fontFamily: "var(--font-display)" }}>{(c as any)[key] ?? 1}</div>
-                  <Button size="icon" variant="ghost" onClick={() => rollDice((c as any)[key] ?? 1, `${STAT_LABELS[key]} Roll`)} data-testid={`button-roll-stat-${key}`}>
+                  <Button size="icon" variant="ghost" onClick={() => rollDice({ poolSize: (c as any)[key] ?? 1, label: `${STAT_LABELS[key]} Roll`, rollType: "stat" })} data-testid={`button-roll-stat-${key}`}>
                     <Dices className="w-3 h-3" />
                   </Button>
                 </div>
@@ -370,7 +379,7 @@ function RoleplayDatacard({ character, onUpdate }: { character: Character; onUpd
                 <span className="text-[10px] font-mono text-muted-foreground uppercase"><RulesTooltip ruleKey={key}>{STAT_LABELS[key]}</RulesTooltip></span>
                 <div className="flex items-center justify-center gap-0.5">
                   <div className="text-xl font-bold text-primary" style={{ fontFamily: "var(--font-display)" }}>{(c as any)[key] ?? (key === "talent" ? 0 : 1)}</div>
-                  <Button size="icon" variant="ghost" onClick={() => rollDice((c as any)[key] ?? (key === "talent" ? 0 : 1), `${STAT_LABELS[key]} Roll`)} data-testid={`button-roll-stat-${key}`}>
+                  <Button size="icon" variant="ghost" onClick={() => rollDice({ poolSize: (c as any)[key] ?? (key === "talent" ? 0 : 1), label: `${STAT_LABELS[key]} Roll`, rollType: "stat" })} data-testid={`button-roll-stat-${key}`}>
                     <Dices className="w-3 h-3" />
                   </Button>
                 </div>
@@ -422,7 +431,7 @@ function RoleplayDatacard({ character, onUpdate }: { character: Character; onUpd
                 <div className="flex items-center gap-1">
                   {lang && <span className="text-xs font-mono"><RulesTooltip ruleKey="spellCast">Cast:</RulesTooltip> {getSpellCast(c, lang)}</span>}
                   {lang && (
-                    <Button size="icon" variant="ghost" onClick={() => rollDice(getSpellCast(c, lang), `Cast ${lname}`, 11, lang.tags ? [lang.tags] : [])} data-testid={`button-roll-spell-${lname}`}>
+                    <Button size="icon" variant="ghost" onClick={() => rollDice({ poolSize: getSpellCast(c, lang), label: `Cast ${lname}`, rollType: "spell", effects: lang.tags ? [lang.tags] : [], damageInfo: lang.damage ? { languageDamage: lang.damage } : undefined })} data-testid={`button-roll-spell-${lname}`}>
                       <Dices className="w-3 h-3" />
                     </Button>
                   )}

@@ -126,7 +126,8 @@ function RoleplayDatacard({ character, onUpdate }: { character: Character; onUpd
   const skillTiers = (c.skillTiers as Record<string, number>) || {};
   const knownLangs = (c.knownLanguages as string[]) || [];
   const knownFeats = (c.knownFeats as string[]) || [];
-  const archetypeFeatures = (c.archetypeFeatures as string[]) || [];
+  const selectedArchetypes = (c.selectedArchetypes as any[]) || [];
+  const archetypeFeatures = selectedArchetypes.flatMap((sa: any) => (sa.selectedFeatures || []) as string[]);
   const { data: allLanguages } = useLanguages();
   const { data: allFeats } = useFeats();
   const seeleMax = getSeeleMax(c);
@@ -158,7 +159,7 @@ function RoleplayDatacard({ character, onUpdate }: { character: Character; onUpd
         <Card className="p-2"><span className="text-[10px] text-muted-foreground font-mono">SEEK</span><div className="text-lg font-bold">{getSeek(c)}</div></Card>
         <Card className="p-2"><span className="text-[10px] text-muted-foreground font-mono">WILL</span><div className="text-lg font-bold">{getWill(c)}</div></Card>
         <Card className="p-2"><span className="text-[10px] text-muted-foreground font-mono">APT</span><div className="text-lg font-bold">{getAptitude(c)}</div></Card>
-        <Card className="p-2"><span className="text-[10px] text-muted-foreground font-mono">SKULK</span><div className="text-lg font-bold">{getSkulk(c)}</div></Card>
+        <Card className="p-2"><span className="text-[10px] text-muted-foreground font-mono">SKULK</span><div className="text-lg font-bold">{c.skulkCurrent ?? 0}/{c.skulkMax ?? 0}</div></Card>
       </div>
 
       <Card className="p-4">
@@ -248,7 +249,7 @@ export default function DatacardPage() {
             </Link>
             <div>
               <h1 className="text-xl text-primary" style={{ fontFamily: "var(--font-display)" }}>{character.name}</h1>
-              <p className="text-xs text-muted-foreground italic">{character.race} {character.archetype} - LVL {character.level}</p>
+              <p className="text-xs text-muted-foreground italic">{character.race} {((character.selectedArchetypes as any[]) || []).map((a: any) => a.name).join(", ") || character.archetype || ""} - LVL {character.level}</p>
             </div>
           </div>
         </div>

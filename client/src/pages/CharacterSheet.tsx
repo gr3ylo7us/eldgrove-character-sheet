@@ -4,17 +4,42 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Save, Swords, BookOpen, Shield, Scroll, Sparkles, Heart, Zap, Trash2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  ArrowLeft, Save, Swords, BookOpen, Shield, Scroll, Sparkles,
+  Heart, Zap, Trash2, Plus, Eye, EyeOff, Target, Flame, Brain,
+  Crown, Dices, Activity, Footprints, ChevronRight, Star, Wand2,
+  BookMarked, Package, Feather, CircleDot, Crosshair, Languages
+} from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useWeapons, useArmor, useSkills, useFeats, useManeuvers, useLanguages, useArchetypes } from "@/hooks/use-game-data";
 import { STAT_LABELS, getReflexes, getSeek, getNerve, getHealth, getWill, getAptitude, getMove, getEvade, getSkulk, getSeeleMax, getWeaponAttack, getWoundscaleThreshold } from "@/lib/formulas";
 import type { Character } from "@shared/schema";
 
-function StatBlock({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
+const STAT_ICONS: Record<string, any> = {
+  power: Flame, finesse: Footprints, vitality: Heart,
+  acumen: Brain, diplomacy: Crown, intuition: Eye,
+};
+
+const WOUNDSCALE_STAGES = [
+  { label: "Uninjured", max: 0, color: "bg-emerald-600" },
+  { label: "Superficial", max: 5, color: "bg-emerald-500" },
+  { label: "Light", max: 10, color: "bg-yellow-500" },
+  { label: "Moderate", max: 15, color: "bg-amber-500" },
+  { label: "Severe", max: 20, color: "bg-orange-500" },
+  { label: "Critical", max: 25, color: "bg-red-500" },
+  { label: "Mortal", max: 28, color: "bg-red-700" },
+  { label: "Death's Door", max: 30, color: "bg-red-900" },
+];
+
+function StatBlock({ label, value, onChange, statKey }: { label: string; value: number; onChange: (v: number) => void; statKey: string }) {
+  const Icon = STAT_ICONS[statKey] || Zap;
   return (
-    <div className="flex flex-col items-center gap-1">
+    <div className="flex flex-col items-center gap-1 p-3 bg-secondary/30 rounded border border-border/20">
+      <Icon className="w-4 h-4 text-primary/70" />
       <span className="text-xs font-mono text-muted-foreground uppercase tracking-wider">{label}</span>
       <div className="flex items-center gap-1">
         <Button size="icon" variant="ghost" onClick={() => onChange(Math.max(0, value - 1))} data-testid={`button-dec-${label}`}>
@@ -32,10 +57,142 @@ function StatBlock({ label, value, onChange }: { label: string; value: number; o
 function DerivedStat({ label, value, icon }: { label: string; value: number | string; icon?: any }) {
   const Icon = icon;
   return (
-    <div className="flex items-center gap-2 bg-secondary/50 px-3 py-1.5 rounded">
-      {Icon && <Icon className="w-3.5 h-3.5 text-primary/60" />}
+    <div className="flex items-center gap-2 bg-secondary/50 px-3 py-2 rounded border border-border/10">
+      {Icon && <Icon className="w-3.5 h-3.5 text-primary/60 shrink-0" />}
       <span className="text-xs text-muted-foreground font-mono uppercase">{label}</span>
       <span className="text-sm font-bold ml-auto">{value}</span>
+    </div>
+  );
+}
+
+function WoundBar({ wounds, maxWounds, onChange }: { wounds: number; maxWounds: number; onChange: (v: number) => void }) {
+  const currentStage = getWoundscaleThreshold(wounds);
+  const safeMax = Math.max(maxWounds, 1);
+  const percentage = Math.min((wounds / safeMax) * 100, 100);
+
+  const activeStage = WOUNDSCALE_STAGES.find((s, i) => {
+    const next = WOUNDSCALE_STAGES[i + 1];
+    if (!next) return true;
+    return wounds <= s.max;
+  }) || WOUNDSCALE_STAGES[WOUNDSCALE_STAGES.length - 1];
+
+  return (
+    <div className="space-y-2" data-testid="wound-bar">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <Activity className="w-4 h-4 text-red-400" />
+          <span className="text-sm font-semibold uppercase tracking-wider" style={{ fontFamily: "var(--font-display)" }}>Woundscale</span>
+        </div>
+        <Badge variant="outline" className="text-xs" data-testid="text-wound-stage">{currentStage}</Badge>
+      </div>
+      <div className="relative h-6 bg-secondary/60 rounded overflow-hidden border border-border/30">
+        <div
+          className={`absolute inset-y-0 left-0 transition-all duration-300 ${activeStage.color}`}
+          style={{ width: `${percentage}%` }}
+        />
+        <div className="absolute inset-0 flex">
+          {WOUNDSCALE_STAGES.slice(1).map((stage) => (
+            <div
+              key={stage.label}
+              className="border-r border-background/30 h-full"
+              style={{ width: `${((stage.max - (WOUNDSCALE_STAGES[WOUNDSCALE_STAGES.indexOf(stage) - 1]?.max || 0)) / safeMax) * 100}%` }}
+              title={stage.label}
+            />
+          ))}
+        </div>
+      </div>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1">
+          <Button size="icon" variant="ghost" onClick={() => onChange(Math.max(0, wounds - 1))} data-testid="button-wound-dec">
+            <span className="text-lg">-</span>
+          </Button>
+          <Input
+            type="number"
+            className="w-16 text-center"
+            value={wounds}
+            onChange={e => onChange(Math.max(0, Math.min(safeMax, parseInt(e.target.value) || 0)))}
+            data-testid="input-wounds"
+          />
+          <Button size="icon" variant="ghost" onClick={() => onChange(Math.min(safeMax, wounds + 1))} data-testid="button-wound-inc">
+            <span className="text-lg">+</span>
+          </Button>
+        </div>
+        <div className="flex gap-1">
+          {WOUNDSCALE_STAGES.slice(1, -1).map((s) => (
+            <div
+              key={s.label}
+              className={`w-2 h-2 rounded-full ${wounds > s.max ? 'opacity-100' : 'opacity-20'} ${s.color}`}
+              title={s.label}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SkulkTracker({ skulkMax, skulkCurrent, derivedSkulk, onMaxChange, onCurrentChange }: {
+  skulkMax: number; skulkCurrent: number; derivedSkulk: number;
+  onMaxChange: (v: number) => void; onCurrentChange: (v: number) => void;
+}) {
+  return (
+    <div className="space-y-2" data-testid="skulk-tracker">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <EyeOff className="w-4 h-4 text-primary/60" />
+          <span className="text-sm font-semibold uppercase tracking-wider" style={{ fontFamily: "var(--font-display)" }}>Skulk</span>
+        </div>
+        <Badge variant="outline" className="text-xs">Roll Target: {derivedSkulk}D</Badge>
+      </div>
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">Current</span>
+          <div className="flex items-center gap-1">
+            <Button size="icon" variant="ghost" onClick={() => onCurrentChange(Math.max(0, skulkCurrent - 1))} data-testid="button-skulk-current-dec">
+              <span>-</span>
+            </Button>
+            <Input type="number" className="w-14 text-center" value={skulkCurrent}
+              onChange={e => onCurrentChange(Math.max(0, parseInt(e.target.value) || 0))}
+              data-testid="input-skulk-current" />
+            <Button size="icon" variant="ghost" onClick={() => onCurrentChange(skulkCurrent + 1)} data-testid="button-skulk-current-inc">
+              <span>+</span>
+            </Button>
+          </div>
+        </div>
+        <span className="text-muted-foreground">/</span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">Max</span>
+          <Input type="number" className="w-14 text-center" value={skulkMax}
+            onChange={e => onMaxChange(Math.max(0, parseInt(e.target.value) || 0))}
+            data-testid="input-skulk-max" />
+        </div>
+        <Button variant="outline" onClick={() => { onMaxChange(derivedSkulk); onCurrentChange(derivedSkulk); }} data-testid="button-skulk-set-max">
+          <Dices className="w-3 h-3 mr-1" /> Set Max
+        </Button>
+      </div>
+      {skulkMax > 0 && (
+        <div className="relative h-2 bg-secondary/60 rounded overflow-hidden">
+          <div
+            className="absolute inset-y-0 left-0 bg-indigo-500 transition-all duration-300"
+            style={{ width: `${skulkMax > 0 ? (skulkCurrent / skulkMax) * 100 : 0}%` }}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface SelectedArchetype {
+  name: string;
+  tier: string;
+  selectedFeatures: string[];
+}
+
+function SectionHeader({ icon: Icon, label }: { icon: any; label: string }) {
+  return (
+    <div className="flex items-center gap-2 mb-3">
+      <Icon className="w-4 h-4 text-primary/70" />
+      <h3 className="text-sm text-muted-foreground uppercase tracking-wider" style={{ fontFamily: "var(--font-display)" }}>{label}</h3>
     </div>
   );
 }
@@ -86,7 +243,43 @@ export default function CharacterSheetPage() {
   const knownManeuvers = (c.knownManeuvers as string[]) || [];
   const knownLangs = (c.knownLanguages as string[]) || [];
   const inventory = (c.inventory as any[]) || [];
-  const archetypeFeatures = (c.archetypeFeatures as string[]) || [];
+  const selectedArchetypes = (c.selectedArchetypes as SelectedArchetype[]) || [];
+
+  const addedSkillNames = Object.keys(skillTiers);
+
+  const addArchetype = (name: string) => {
+    const arch = allArchetypes?.find(a => a.name === name);
+    if (!arch || selectedArchetypes.some(sa => sa.name === name)) return;
+    const features = (arch.features as string[]) || [];
+    const newEntry: SelectedArchetype = { name: arch.name, tier: arch.tier || "", selectedFeatures: features };
+    update("selectedArchetypes", [...selectedArchetypes, newEntry]);
+  };
+
+  const removeArchetype = (index: number) => {
+    update("selectedArchetypes", selectedArchetypes.filter((_, i) => i !== index));
+  };
+
+  const toggleArchetypeFeature = (archIndex: number, feature: string) => {
+    const updated = [...selectedArchetypes];
+    const arch = updated[archIndex];
+    if (arch.selectedFeatures.includes(feature)) {
+      arch.selectedFeatures = arch.selectedFeatures.filter(f => f !== feature);
+    } else {
+      arch.selectedFeatures = [...arch.selectedFeatures, feature];
+    }
+    update("selectedArchetypes", updated);
+  };
+
+  const addSkill = (skillName: string) => {
+    if (skillTiers[skillName] !== undefined) return;
+    update("skillTiers", { ...skillTiers, [skillName]: 0 });
+  };
+
+  const removeSkill = (skillName: string) => {
+    const newTiers = { ...skillTiers };
+    delete newTiers[skillName];
+    update("skillTiers", newTiers);
+  };
 
   return (
     <div className="min-h-screen p-3 md:p-6">
@@ -106,27 +299,12 @@ export default function CharacterSheetPage() {
               />
               <div className="flex items-center gap-2 mt-1">
                 <Input className="text-sm bg-transparent border-none p-0 h-auto w-24 text-muted-foreground" value={form.race || ""} onChange={e => update("race", e.target.value)} placeholder="Race" data-testid="input-race" />
-                <Select value={form.archetype || ""} onValueChange={v => {
-                  update("archetype", v);
-                  const arch = allArchetypes?.find(a => a.name === v);
-                  if (arch) {
-                    update("archetypeFeatures", arch.features || []);
-                  }
-                }}>
-                  <SelectTrigger className="text-sm h-auto py-0 w-36 border-none bg-transparent text-muted-foreground" data-testid="select-archetype">
-                    <SelectValue placeholder="Archetype" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {allArchetypes?.map(a => (
-                      <SelectItem key={a.id} value={a.name}>{a.name} ({a.tier})</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <div className="flex items-center gap-2 text-sm">
+              <Star className="w-3.5 h-3.5 text-primary/60" />
               <span className="text-muted-foreground font-mono">LVL</span>
               <Input type="number" className="w-14 text-center" value={form.level ?? 1} onChange={e => update("level", parseInt(e.target.value) || 1)} data-testid="input-level" />
             </div>
@@ -147,53 +325,75 @@ export default function CharacterSheetPage() {
             <TabsTrigger value="combat" data-testid="tab-combat"><Swords className="w-3 h-3 mr-1" /> Combat</TabsTrigger>
             <TabsTrigger value="skills" data-testid="tab-skills"><BookOpen className="w-3 h-3 mr-1" /> Skills</TabsTrigger>
             <TabsTrigger value="abilities" data-testid="tab-abilities"><Sparkles className="w-3 h-3 mr-1" /> Abilities</TabsTrigger>
-            <TabsTrigger value="inventory" data-testid="tab-inventory"><Scroll className="w-3 h-3 mr-1" /> Inventory</TabsTrigger>
+            <TabsTrigger value="inventory" data-testid="tab-inventory"><Package className="w-3 h-3 mr-1" /> Inventory</TabsTrigger>
           </TabsList>
 
           <TabsContent value="stats" className="space-y-4">
             <Card className="p-5">
-              <h3 className="text-sm text-muted-foreground uppercase tracking-wider mb-4" style={{ fontFamily: "var(--font-display)" }}>Core Stats</h3>
-              <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
+              <SectionHeader icon={Zap} label="Core Stats" />
+              <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
                 {Object.entries(STAT_LABELS).map(([key, label]) => (
-                  <StatBlock key={key} label={label} value={(form as any)[key] ?? 1} onChange={v => update(key, v)} />
+                  <StatBlock key={key} statKey={key} label={label} value={(form as any)[key] ?? 1} onChange={v => update(key, v)} />
                 ))}
               </div>
             </Card>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
               <DerivedStat label="Reflexes" value={getReflexes(c)} icon={Zap} />
-              <DerivedStat label="Seek" value={getSeek(c)} />
-              <DerivedStat label="Nerve" value={getNerve(c)} icon={Heart} />
+              <DerivedStat label="Seek" value={getSeek(c)} icon={Crosshair} />
+              <DerivedStat label="Nerve" value={getNerve(c)} icon={Shield} />
               <DerivedStat label="Health" value={getHealth(c)} icon={Heart} />
-              <DerivedStat label="Will" value={getWill(c)} />
-              <DerivedStat label="Aptitude" value={getAptitude(c)} />
-              <DerivedStat label="Move" value={`${getMove(c)}"`} />
+              <DerivedStat label="Will" value={getWill(c)} icon={Brain} />
+              <DerivedStat label="Aptitude" value={getAptitude(c)} icon={BookOpen} />
+              <DerivedStat label="Move" value={`${getMove(c)}m`} icon={Footprints} />
               <DerivedStat label="Evade" value={getEvade(c)} icon={Shield} />
-              <DerivedStat label="Skulk" value={getSkulk(c)} />
               <DerivedStat label="Seele Max" value={getSeeleMax(c)} icon={Sparkles} />
             </div>
-            <Card className="p-5">
-              <h3 className="text-sm text-muted-foreground uppercase tracking-wider mb-3" style={{ fontFamily: "var(--font-display)" }}>Condition</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div>
-                  <label className="text-xs text-muted-foreground">Seele</label>
-                  <div className="flex items-center gap-1">
-                    <Input type="number" className="w-16" value={form.seeleCurrent ?? 0} onChange={e => update("seeleCurrent", parseInt(e.target.value) || 0)} data-testid="input-seele-current" />
-                    <span className="text-muted-foreground">/</span>
-                    <span className="text-sm">{getSeeleMax(c)}</span>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Card className="p-5">
+                <SectionHeader icon={Sparkles} label="Seele" />
+                <div className="flex items-center gap-2">
+                  <Input type="number" className="w-16 text-center" value={form.seeleCurrent ?? 0}
+                    onChange={e => update("seeleCurrent", parseInt(e.target.value) || 0)} data-testid="input-seele-current" />
+                  <span className="text-muted-foreground">/</span>
+                  <span className="text-sm font-bold">{getSeeleMax(c)}</span>
+                </div>
+                {getSeeleMax(c) > 0 && (
+                  <div className="relative h-2 bg-secondary/60 rounded overflow-hidden mt-2">
+                    <div className="absolute inset-y-0 left-0 bg-violet-500 transition-all duration-300"
+                      style={{ width: `${Math.min(((form.seeleCurrent ?? 0) / getSeeleMax(c)) * 100, 100)}%` }} />
                   </div>
+                )}
+              </Card>
+
+              <Card className="p-5">
+                <SkulkTracker
+                  skulkMax={form.skulkMax ?? 0}
+                  skulkCurrent={form.skulkCurrent ?? 0}
+                  derivedSkulk={getSkulk(c)}
+                  onMaxChange={v => update("skulkMax", v)}
+                  onCurrentChange={v => update("skulkCurrent", v)}
+                />
+              </Card>
+            </div>
+
+            <Card className="p-5">
+              <WoundBar wounds={form.woundsCurrent ?? 0} maxWounds={30} onChange={v => update("woundsCurrent", v)} />
+            </Card>
+
+            <Card className="p-5">
+              <SectionHeader icon={CircleDot} label="Other Trackers" />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex items-center gap-2">
+                  <Crown className="w-3.5 h-3.5 text-primary/60" />
+                  <span className="text-xs text-muted-foreground">Renown</span>
+                  <Input type="number" className="w-16 text-center" value={form.renown ?? 0} onChange={e => update("renown", parseInt(e.target.value) || 0)} data-testid="input-renown" />
                 </div>
-                <div>
-                  <label className="text-xs text-muted-foreground">Wounds</label>
-                  <Input type="number" className="w-16" value={form.woundsCurrent ?? 0} onChange={e => update("woundsCurrent", parseInt(e.target.value) || 0)} data-testid="input-wounds" />
-                  <span className="text-xs text-muted-foreground">{getWoundscaleThreshold(c.woundsCurrent ?? 0)}</span>
-                </div>
-                <div>
-                  <label className="text-xs text-muted-foreground">Renown</label>
-                  <Input type="number" className="w-16" value={form.renown ?? 0} onChange={e => update("renown", parseInt(e.target.value) || 0)} data-testid="input-renown" />
-                </div>
-                <div>
-                  <label className="text-xs text-muted-foreground">Karma</label>
-                  <Input type="number" className="w-16" value={form.karma ?? 0} onChange={e => update("karma", parseInt(e.target.value) || 0)} data-testid="input-karma" />
+                <div className="flex items-center gap-2">
+                  <Star className="w-3.5 h-3.5 text-primary/60" />
+                  <span className="text-xs text-muted-foreground">Karma</span>
+                  <Input type="number" className="w-16 text-center" value={form.karma ?? 0} onChange={e => update("karma", parseInt(e.target.value) || 0)} data-testid="input-karma" />
                 </div>
               </div>
             </Card>
@@ -201,7 +401,7 @@ export default function CharacterSheetPage() {
 
           <TabsContent value="combat" className="space-y-4">
             <Card className="p-5">
-              <h3 className="text-sm text-muted-foreground uppercase tracking-wider mb-3" style={{ fontFamily: "var(--font-display)" }}>Armor</h3>
+              <SectionHeader icon={Shield} label="Armor" />
               <Select value={form.armorName || ""} onValueChange={v => {
                 const a = allArmor?.find(a => a.name === v);
                 if (a) {
@@ -217,16 +417,17 @@ export default function CharacterSheetPage() {
                 </SelectContent>
               </Select>
               {form.armorName && (
-                <div className="mt-2 text-sm text-muted-foreground">
-                  <span className="font-mono">Protection: {form.armorProtection} | Evasion Dice: {form.armorEvasionDice}</span>
-                  <p className="mt-1 italic text-xs">{form.armorEffects}</p>
+                <div className="mt-3 flex items-center gap-3 flex-wrap">
+                  <Badge variant="secondary"><Shield className="w-3 h-3 mr-1" /> Prot: {form.armorProtection}</Badge>
+                  <Badge variant="secondary"><Footprints className="w-3 h-3 mr-1" /> Eva Dice: {form.armorEvasionDice}</Badge>
+                  {form.armorEffects && <p className="text-xs text-muted-foreground italic mt-1 w-full">{form.armorEffects}</p>}
                 </div>
               )}
             </Card>
 
             <Card className="p-5">
-              <div className="flex items-center justify-between mb-3 gap-2">
-                <h3 className="text-sm text-muted-foreground uppercase tracking-wider" style={{ fontFamily: "var(--font-display)" }}>Weapons</h3>
+              <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
+                <SectionHeader icon={Swords} label="Weapons" />
                 <Select onValueChange={v => {
                   const w = allWeapons?.find(w => w.name === v);
                   if (w) {
@@ -245,15 +446,16 @@ export default function CharacterSheetPage() {
                   <div key={i} className="flex items-start justify-between gap-2 p-3 bg-secondary/30 rounded border border-border/20" data-testid={`weapon-${i}`}>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
+                        <Swords className="w-3.5 h-3.5 text-primary/60 shrink-0" />
                         <span className="font-semibold text-sm">{w.name}</span>
-                        <span className="text-xs text-muted-foreground font-mono">{w.type}</span>
+                        <Badge variant="outline" className="text-xs">{w.type}</Badge>
                       </div>
-                      <div className="flex flex-wrap gap-3 text-xs text-muted-foreground mt-1">
-                        <span>ATK: {getWeaponAttack(c, w)}</span>
-                        <span>DMG: {w.normalDamage}/{w.critDamage}</span>
-                        <span>{w.damageType}</span>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        <Badge variant="secondary" className="text-xs"><Target className="w-3 h-3 mr-1" /> ATK: {getWeaponAttack(c, w)}</Badge>
+                        <Badge variant="secondary" className="text-xs"><Flame className="w-3 h-3 mr-1" /> DMG: {w.normalDamage}/{w.critDamage}</Badge>
+                        <Badge variant="secondary" className="text-xs">{w.damageType}</Badge>
                       </div>
-                      {w.effects && <p className="text-xs text-muted-foreground/70 italic mt-1">{w.effects}</p>}
+                      {w.effects && <p className="text-xs text-muted-foreground/70 italic mt-2">{w.effects}</p>}
                     </div>
                     <Button size="icon" variant="ghost" onClick={() => {
                       update("equippedWeapons", equippedWeapons.filter((_: any, j: number) => j !== i));
@@ -262,35 +464,62 @@ export default function CharacterSheetPage() {
                     </Button>
                   </div>
                 ))}
+                {equippedWeapons.length === 0 && (
+                  <p className="text-xs text-muted-foreground italic text-center py-4">No weapons equipped. Add one above.</p>
+                )}
               </div>
             </Card>
           </TabsContent>
 
           <TabsContent value="skills" className="space-y-4">
             <Card className="p-5">
-              <h3 className="text-sm text-muted-foreground uppercase tracking-wider mb-3" style={{ fontFamily: "var(--font-display)" }}>Skill Tiers</h3>
+              <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
+                <SectionHeader icon={BookOpen} label="Skills" />
+                <Select onValueChange={addSkill} data-testid="select-add-skill">
+                  <SelectTrigger className="w-52" data-testid="select-add-skill-trigger">
+                    <SelectValue placeholder="Add skill..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {allSkills?.filter(s => !addedSkillNames.includes(s.name)).map(s => (
+                      <SelectItem key={s.id} value={s.name}>
+                        {s.name} ({s.stat})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {allSkills?.map(s => {
-                  const tier = skillTiers[s.name] ?? 0;
+                {addedSkillNames.length === 0 && (
+                  <p className="text-xs text-muted-foreground italic col-span-2 text-center py-6">No skills added yet. Use the dropdown above to add skills your character has trained.</p>
+                )}
+                {addedSkillNames.map(sName => {
+                  const tier = skillTiers[sName] ?? 0;
+                  const skillData = allSkills?.find(s => s.name === sName);
                   return (
-                    <div key={s.id} className="flex items-center justify-between gap-2 p-2 rounded bg-secondary/20 border border-border/10" data-testid={`skill-${s.name}`}>
-                      <div className="min-w-0">
-                        <span className="text-sm">{s.name}</span>
-                        <span className="text-xs text-muted-foreground ml-2">{s.stat} / {s.category}</span>
+                    <div key={sName} className="flex items-center justify-between gap-2 p-2.5 rounded bg-secondary/20 border border-border/10" data-testid={`skill-${sName}`}>
+                      <div className="min-w-0 flex items-center gap-2">
+                        <BookMarked className="w-3.5 h-3.5 text-primary/50 shrink-0" />
+                        <div>
+                          <span className="text-sm font-medium">{sName}</span>
+                          {skillData && <span className="text-xs text-muted-foreground ml-1.5">({skillData.stat})</span>}
+                        </div>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
                         <Button size="icon" variant="ghost" onClick={() => {
-                          const t = { ...skillTiers, [s.name]: Math.max(0, tier - 1) };
+                          const t = { ...skillTiers, [sName]: Math.max(0, tier - 1) };
                           update("skillTiers", t);
                         }}>
                           <span>-</span>
                         </Button>
-                        <span className="w-6 text-center text-sm font-bold">{tier}</span>
+                        <span className="w-6 text-center text-sm font-bold text-primary">{tier}</span>
                         <Button size="icon" variant="ghost" onClick={() => {
-                          const t = { ...skillTiers, [s.name]: tier + 1 };
+                          const t = { ...skillTiers, [sName]: tier + 1 };
                           update("skillTiers", t);
                         }}>
                           <span>+</span>
+                        </Button>
+                        <Button size="icon" variant="ghost" onClick={() => removeSkill(sName)} data-testid={`button-remove-skill-${sName}`}>
+                          <Trash2 className="w-3 h-3" />
                         </Button>
                       </div>
                     </div>
@@ -301,28 +530,70 @@ export default function CharacterSheetPage() {
           </TabsContent>
 
           <TabsContent value="abilities" className="space-y-4">
-            {(c.archetype || archetypeFeatures.length > 0) && (
-              <Card className="p-5">
-                <h3 className="text-sm text-muted-foreground uppercase tracking-wider mb-3" style={{ fontFamily: "var(--font-display)" }}>
-                  Archetype: {c.archetype || "None"}
-                </h3>
-                {archetypeFeatures.length > 0 ? (
-                  <div className="space-y-2">
-                    {archetypeFeatures.map((f: string, i: number) => (
-                      <div key={i} className="p-3 bg-secondary/20 rounded border border-border/10">
-                        <p className="text-sm">{f}</p>
-                      </div>
+            <Card className="p-5">
+              <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
+                <SectionHeader icon={Crown} label="Archetypes" />
+                <Select onValueChange={addArchetype} data-testid="select-add-archetype">
+                  <SelectTrigger className="w-52" data-testid="select-add-archetype-trigger">
+                    <SelectValue placeholder="Add archetype..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {allArchetypes?.filter(a => !selectedArchetypes.some(sa => sa.name === a.name)).map(a => (
+                      <SelectItem key={a.id} value={a.name}>{a.name} ({a.tier})</SelectItem>
                     ))}
-                  </div>
-                ) : (
-                  <p className="text-xs text-muted-foreground italic">Select an archetype to see its features.</p>
-                )}
-              </Card>
-            )}
+                  </SelectContent>
+                </Select>
+              </div>
+              {selectedArchetypes.length === 0 && (
+                <p className="text-xs text-muted-foreground italic text-center py-4">No archetypes selected. This is a classless system — add as many archetypes as you qualify for.</p>
+              )}
+              <div className="space-y-3">
+                {selectedArchetypes.map((sa, archIdx) => {
+                  const archData = allArchetypes?.find(a => a.name === sa.name);
+                  const allFeatures = (archData?.features as string[]) || [];
+                  return (
+                    <div key={archIdx} className="p-4 bg-secondary/20 rounded border border-border/20" data-testid={`archetype-entry-${archIdx}`}>
+                      <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
+                        <div className="flex items-center gap-2">
+                          <Crown className="w-4 h-4 text-primary" />
+                          <span className="font-semibold" style={{ fontFamily: "var(--font-display)" }}>{sa.name}</span>
+                          <Badge variant="outline" className="text-xs">{sa.tier}</Badge>
+                        </div>
+                        <Button size="icon" variant="ghost" onClick={() => removeArchetype(archIdx)} data-testid={`button-remove-archetype-${archIdx}`}>
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </div>
+                      <div className="space-y-2">
+                        {allFeatures.map((feature, fIdx) => {
+                          const isSelected = sa.selectedFeatures.includes(feature);
+                          const featureName = feature.split(":")[0];
+                          return (
+                            <div key={fIdx} className={`flex items-start gap-3 p-2.5 rounded transition-colors ${isSelected ? 'bg-primary/5 border border-primary/20' : 'bg-secondary/10 border border-transparent'}`}>
+                              <Checkbox
+                                checked={isSelected}
+                                onCheckedChange={() => toggleArchetypeFeature(archIdx, feature)}
+                                className="mt-0.5 shrink-0"
+                                data-testid={`checkbox-feature-${archIdx}-${fIdx}`}
+                              />
+                              <div className="min-w-0">
+                                <span className="text-sm font-semibold text-primary/90">{featureName}</span>
+                                {feature.includes(":") && (
+                                  <p className="text-xs text-muted-foreground mt-0.5">{feature.substring(feature.indexOf(":") + 1).trim()}</p>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </Card>
 
             <Card className="p-5">
-              <div className="flex items-center justify-between mb-3 gap-2">
-                <h3 className="text-sm text-muted-foreground uppercase tracking-wider" style={{ fontFamily: "var(--font-display)" }}>Feats</h3>
+              <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
+                <SectionHeader icon={Feather} label="Feats" />
                 <Select onValueChange={v => { if (!knownFeats.includes(v)) update("knownFeats", [...knownFeats, v]); }}>
                   <SelectTrigger className="w-48" data-testid="select-add-feat"><SelectValue placeholder="Add feat..." /></SelectTrigger>
                   <SelectContent>
@@ -331,12 +602,19 @@ export default function CharacterSheetPage() {
                 </Select>
               </div>
               <div className="space-y-2">
+                {knownFeats.length === 0 && (
+                  <p className="text-xs text-muted-foreground italic text-center py-4">No feats learned yet.</p>
+                )}
                 {knownFeats.map((fname, i) => {
                   const feat = allFeats?.find(f => f.name === fname);
                   return (
-                    <div key={i} className="p-2 bg-secondary/20 rounded border border-border/10 flex justify-between gap-2">
-                      <div>
-                        <span className="text-sm font-semibold">{fname}</span>
+                    <div key={i} className="p-3 bg-secondary/20 rounded border border-border/10 flex justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Feather className="w-3.5 h-3.5 text-primary/50 shrink-0" />
+                          <span className="text-sm font-semibold">{fname}</span>
+                          {feat?.featType && <Badge variant="outline" className="text-xs">{feat.featType}</Badge>}
+                        </div>
                         {feat && <p className="text-xs text-muted-foreground mt-1">{feat.effect}</p>}
                       </div>
                       <Button size="icon" variant="ghost" onClick={() => update("knownFeats", knownFeats.filter((_, j) => j !== i))}>
@@ -349,8 +627,8 @@ export default function CharacterSheetPage() {
             </Card>
 
             <Card className="p-5">
-              <div className="flex items-center justify-between mb-3 gap-2">
-                <h3 className="text-sm text-muted-foreground uppercase tracking-wider" style={{ fontFamily: "var(--font-display)" }}>Maneuvers</h3>
+              <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
+                <SectionHeader icon={Target} label="Maneuvers" />
                 <Select onValueChange={v => { if (!knownManeuvers.includes(v)) update("knownManeuvers", [...knownManeuvers, v]); }}>
                   <SelectTrigger className="w-48" data-testid="select-add-maneuver"><SelectValue placeholder="Add maneuver..." /></SelectTrigger>
                   <SelectContent>
@@ -359,14 +637,18 @@ export default function CharacterSheetPage() {
                 </Select>
               </div>
               <div className="space-y-2">
+                {knownManeuvers.length === 0 && (
+                  <p className="text-xs text-muted-foreground italic text-center py-4">No maneuvers learned yet.</p>
+                )}
                 {knownManeuvers.map((mname, i) => {
                   const man = allManeuvers?.find(m => m.name === mname);
                   return (
-                    <div key={i} className="p-2 bg-secondary/20 rounded border border-border/10 flex justify-between gap-2">
-                      <div>
+                    <div key={i} className="p-3 bg-secondary/20 rounded border border-border/10 flex justify-between gap-2">
+                      <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
+                          <Target className="w-3.5 h-3.5 text-primary/50 shrink-0" />
                           <span className="text-sm font-semibold">{mname}</span>
-                          {man && <span className="text-xs bg-primary/20 text-primary px-1.5 rounded">{man.seeleCost} Seele</span>}
+                          {man && <Badge variant="secondary" className="text-xs"><Sparkles className="w-3 h-3 mr-1" /> {man.seeleCost} Seele</Badge>}
                         </div>
                         {man && <p className="text-xs text-muted-foreground mt-1">{man.effect}</p>}
                       </div>
@@ -380,8 +662,8 @@ export default function CharacterSheetPage() {
             </Card>
 
             <Card className="p-5">
-              <div className="flex items-center justify-between mb-3 gap-2">
-                <h3 className="text-sm text-muted-foreground uppercase tracking-wider" style={{ fontFamily: "var(--font-display)" }}>Known Languages (Magick)</h3>
+              <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
+                <SectionHeader icon={Languages} label="Known Languages (Magick)" />
                 <Select onValueChange={v => { if (!knownLangs.includes(v)) update("knownLanguages", [...knownLangs, v]); }}>
                   <SelectTrigger className="w-48" data-testid="select-add-lang"><SelectValue placeholder="Add language..." /></SelectTrigger>
                   <SelectContent>
@@ -390,13 +672,20 @@ export default function CharacterSheetPage() {
                 </Select>
               </div>
               <div className="space-y-2">
+                {knownLangs.length === 0 && (
+                  <p className="text-xs text-muted-foreground italic text-center py-4">No magical languages learned yet.</p>
+                )}
                 {knownLangs.map((lname, i) => {
                   const lang = allLanguages?.find(l => l.name === lname);
                   return (
-                    <div key={i} className="p-2 bg-secondary/20 rounded border border-border/10 flex justify-between gap-2">
-                      <div>
-                        <span className="text-sm font-semibold">{lname}</span>
-                        {lang && <span className="text-xs text-muted-foreground ml-2">({lang.domain}) Diff: {lang.difficulty}</span>}
+                    <div key={i} className="p-3 bg-secondary/20 rounded border border-border/10 flex justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Wand2 className="w-3.5 h-3.5 text-primary/50 shrink-0" />
+                          <span className="text-sm font-semibold">{lname}</span>
+                          {lang && <Badge variant="outline" className="text-xs">{lang.domain}</Badge>}
+                          {lang && <Badge variant="secondary" className="text-xs">Diff: {lang.difficulty}</Badge>}
+                        </div>
                         {lang && <p className="text-xs text-muted-foreground mt-1">{lang.effect}</p>}
                       </div>
                       <Button size="icon" variant="ghost" onClick={() => update("knownLanguages", knownLangs.filter((_, j) => j !== i))}>
@@ -411,19 +700,25 @@ export default function CharacterSheetPage() {
 
           <TabsContent value="inventory" className="space-y-4">
             <Card className="p-5">
-              <h3 className="text-sm text-muted-foreground uppercase tracking-wider mb-3" style={{ fontFamily: "var(--font-display)" }}>Inventory</h3>
+              <SectionHeader icon={Package} label="Inventory" />
               <div className="space-y-2">
                 {inventory.map((item: any, i: number) => (
-                  <div key={i} className="flex items-center justify-between gap-2 p-2 bg-secondary/20 rounded border border-border/10">
-                    <div>
-                      <span className="text-sm font-semibold">{item.name}</span>
-                      {item.description && <p className="text-xs text-muted-foreground">{item.description}</p>}
+                  <div key={i} className="flex items-center justify-between gap-2 p-2.5 bg-secondary/20 rounded border border-border/10">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Package className="w-3.5 h-3.5 text-primary/50 shrink-0" />
+                      <div>
+                        <span className="text-sm font-semibold">{item.name}</span>
+                        {item.description && <p className="text-xs text-muted-foreground">{item.description}</p>}
+                      </div>
                     </div>
                     <Button size="icon" variant="ghost" onClick={() => update("inventory", inventory.filter((_: any, j: number) => j !== i))}>
                       <Trash2 className="w-3 h-3" />
                     </Button>
                   </div>
                 ))}
+                {inventory.length === 0 && (
+                  <p className="text-xs text-muted-foreground italic text-center py-4">Inventory is empty.</p>
+                )}
                 <div className="flex gap-2 mt-3">
                   <Input id="new-item-name" placeholder="Item name" className="flex-1" data-testid="input-new-item" />
                   <Button variant="outline" onClick={() => {
@@ -432,12 +727,12 @@ export default function CharacterSheetPage() {
                       update("inventory", [...inventory, { name: inp.value.trim(), description: "" }]);
                       inp.value = "";
                     }
-                  }} data-testid="button-add-item">Add</Button>
+                  }} data-testid="button-add-item"><Plus className="w-3 h-3 mr-1" /> Add</Button>
                 </div>
               </div>
             </Card>
             <Card className="p-5">
-              <h3 className="text-sm text-muted-foreground uppercase tracking-wider mb-3" style={{ fontFamily: "var(--font-display)" }}>Notes</h3>
+              <SectionHeader icon={Scroll} label="Notes" />
               <Textarea value={form.notes || ""} onChange={e => update("notes", e.target.value)} placeholder="Character notes..." className="min-h-[100px]" data-testid="textarea-notes" />
             </Card>
           </TabsContent>

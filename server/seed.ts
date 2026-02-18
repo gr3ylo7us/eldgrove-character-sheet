@@ -293,7 +293,7 @@ export async function seedDatabase() {
       archetype: "Mage",
       level: 3,
       progress: 3,
-      power: 1, finesse: 6, vitality: 2, acumen: 4, diplomacy: 1, intuition: 2,
+      power: 1, finesse: 6, vitality: 2, acumen: 4, diplomacy: 1, intuition: 2, talent: 0, moxie: 1, audacity: 1,
       seeleMax: 9, seeleCurrent: 9,
       renown: 0, karma: 0,
       woundsCurrent: 0,

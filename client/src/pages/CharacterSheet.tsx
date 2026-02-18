@@ -22,7 +22,12 @@ import type { Character } from "@shared/schema";
 const STAT_ICONS: Record<string, any> = {
   power: Flame, finesse: Footprints, vitality: Heart,
   acumen: Brain, diplomacy: Crown, intuition: Eye,
+  talent: Sparkles, moxie: Dices, audacity: Feather,
 };
+
+const BODY_STATS = ["power", "finesse", "vitality"] as const;
+const MIND_STATS = ["acumen", "diplomacy", "intuition"] as const;
+const SPIRIT_STATS = ["talent", "moxie", "audacity"] as const;
 
 const WOUNDSCALE_STAGES = [
   { label: "Uninjured", max: 0, color: "bg-emerald-600" },
@@ -329,12 +334,39 @@ export default function CharacterSheetPage() {
           </TabsList>
 
           <TabsContent value="stats" className="space-y-4">
-            <Card className="p-5">
-              <SectionHeader icon={Zap} label="Core Stats" />
-              <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
-                {Object.entries(STAT_LABELS).map(([key, label]) => (
-                  <StatBlock key={key} statKey={key} label={label} value={(form as any)[key] ?? 1} onChange={v => update(key, v)} />
-                ))}
+            <Card className="p-5 space-y-4">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Flame className="w-3.5 h-3.5 text-red-400" />
+                  <span className="text-xs font-bold tracking-widest text-muted-foreground uppercase">Body</span>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  {BODY_STATS.map(key => (
+                    <StatBlock key={key} statKey={key} label={STAT_LABELS[key]} value={(form as any)[key] ?? 1} onChange={v => update(key, v)} />
+                  ))}
+                </div>
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Brain className="w-3.5 h-3.5 text-blue-400" />
+                  <span className="text-xs font-bold tracking-widest text-muted-foreground uppercase">Mind</span>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  {MIND_STATS.map(key => (
+                    <StatBlock key={key} statKey={key} label={STAT_LABELS[key]} value={(form as any)[key] ?? 1} onChange={v => update(key, v)} />
+                  ))}
+                </div>
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles className="w-3.5 h-3.5 text-violet-400" />
+                  <span className="text-xs font-bold tracking-widest text-muted-foreground uppercase">Spirit</span>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  {SPIRIT_STATS.map(key => (
+                    <StatBlock key={key} statKey={key} label={STAT_LABELS[key]} value={(form as any)[key] ?? (key === "talent" ? 0 : 1)} onChange={v => update(key, v)} />
+                  ))}
+                </div>
               </div>
             </Card>
 

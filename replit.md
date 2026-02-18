@@ -37,12 +37,18 @@ data/csv/     - Source CSV files for game reference data
 ```
 
 ## Key Game Mechanics
-- 6 core stats: Power, Finesse, Vitality, Acumen, Diplomacy, Intuition
-- Derived attributes: Reflexes, Seek, Nerve, Health, Will, Aptitude, Move, Evade, Skulk
-- Seele resource system (max = VIT + DIP + INT + ACU)
+- 9 core stats in 3 categories:
+  - Body: Power (POW), Finesse (FIN), Vitality (VIT)
+  - Mind: Acumen (ACU), Diplomacy (DIP), Intuition (INT)
+  - Spirit: Talent (TAL), Moxie (MOX), Audacity (AUD)
+- Derived attributes:
+  - Reflexes = max(Body stats) + ceil(avg(Body stats))
+  - Seek = max(Mind stats) + ceil(avg(Mind stats))
+  - Seele Max = ceil(sum of all 9 stats / 2)
+  - Nerve, Health, Will, Aptitude, Move, Evade, Skulk
 - Woundscale progression tracking
-- Weapon attack = weapon dice + mastery tier + attacks
-- Spell cast = arcane mastery + language difficulty
+- Weapon attack = weapon dice + mastery tier (Melee/Ranged Mastery skill)
+- Spell cast = Arcane Mastery + language difficulty (cost)
 
 ## Design
 - Dark fantasy RPG aesthetic

@@ -50,9 +50,10 @@ export function getSkulk(c: Character): number {
 }
 
 export function getSeeleMax(c: Character): number {
-  const total = (c.power ?? 1) + (c.finesse ?? 1) + (c.vitality ?? 1) +
-                (c.acumen ?? 1) + (c.diplomacy ?? 1) + (c.intuition ?? 1);
-  return Math.floor(total / 2);
+  const body = (c.power ?? 1) + (c.finesse ?? 1) + (c.vitality ?? 1);
+  const mind = (c.acumen ?? 1) + (c.diplomacy ?? 1) + (c.intuition ?? 1);
+  const spirit = (c.talent ?? 0) + (c.moxie ?? 1) + (c.audacity ?? 1);
+  return Math.ceil((body + mind + spirit) / 2);
 }
 
 export function getWeaponAttack(c: Character, weapon: any): number {
@@ -88,4 +89,7 @@ export const STAT_LABELS: Record<string, string> = {
   acumen: "ACU",
   diplomacy: "DIP",
   intuition: "INT",
+  talent: "TAL",
+  moxie: "MOX",
+  audacity: "AUD",
 };

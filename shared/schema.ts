@@ -16,6 +16,9 @@ export const characters = pgTable("characters", {
   acumen: integer("acumen").default(1),
   diplomacy: integer("diplomacy").default(1),
   intuition: integer("intuition").default(1),
+  talent: integer("talent").default(0),
+  moxie: integer("moxie").default(1),
+  audacity: integer("audacity").default(1),
 
   seeleMax: integer("seele_max").default(9),
   seeleCurrent: integer("seele_current").default(9),

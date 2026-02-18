@@ -150,13 +150,40 @@ function CombatDatacard({ character, onUpdate }: { character: Character; onUpdat
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
-        {Object.entries(STAT_LABELS).map(([key, label]) => (
-          <div key={key} className="text-center">
-            <span className="text-[10px] font-mono text-muted-foreground uppercase">{label}</span>
-            <div className="text-xl font-bold text-primary" style={{ fontFamily: "var(--font-display)" }}>{(c as any)[key] ?? 1}</div>
+      <div className="grid grid-cols-3 gap-3">
+        <div>
+          <div className="text-[9px] font-mono text-red-400 uppercase text-center mb-1">Body</div>
+          <div className="grid grid-cols-3 gap-2">
+            {(["power", "finesse", "vitality"] as const).map(key => (
+              <div key={key} className="text-center">
+                <span className="text-[10px] font-mono text-muted-foreground uppercase">{STAT_LABELS[key]}</span>
+                <div className="text-xl font-bold text-primary" style={{ fontFamily: "var(--font-display)" }}>{(c as any)[key] ?? 1}</div>
+              </div>
+            ))}
           </div>
-        ))}
+        </div>
+        <div>
+          <div className="text-[9px] font-mono text-blue-400 uppercase text-center mb-1">Mind</div>
+          <div className="grid grid-cols-3 gap-2">
+            {(["acumen", "diplomacy", "intuition"] as const).map(key => (
+              <div key={key} className="text-center">
+                <span className="text-[10px] font-mono text-muted-foreground uppercase">{STAT_LABELS[key]}</span>
+                <div className="text-xl font-bold text-primary" style={{ fontFamily: "var(--font-display)" }}>{(c as any)[key] ?? 1}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div>
+          <div className="text-[9px] font-mono text-violet-400 uppercase text-center mb-1">Spirit</div>
+          <div className="grid grid-cols-3 gap-2">
+            {(["talent", "moxie", "audacity"] as const).map(key => (
+              <div key={key} className="text-center">
+                <span className="text-[10px] font-mono text-muted-foreground uppercase">{STAT_LABELS[key]}</span>
+                <div className="text-xl font-bold text-primary" style={{ fontFamily: "var(--font-display)" }}>{(c as any)[key] ?? (key === "talent" ? 0 : 1)}</div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       <ResourceTracker label="Seele" current={c.seeleCurrent ?? 0} max={seeleMax} onChange={v => onUpdate("seeleCurrent", v)} icon={Sparkles} />
@@ -266,13 +293,40 @@ function RoleplayDatacard({ character, onUpdate }: { character: Character; onUpd
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
-        {Object.entries(STAT_LABELS).map(([key, label]) => (
-          <div key={key} className="text-center">
-            <span className="text-[10px] font-mono text-muted-foreground uppercase">{label}</span>
-            <div className="text-xl font-bold text-primary" style={{ fontFamily: "var(--font-display)" }}>{(c as any)[key] ?? 1}</div>
+      <div className="grid grid-cols-3 gap-3">
+        <div>
+          <div className="text-[9px] font-mono text-red-400 uppercase text-center mb-1">Body</div>
+          <div className="grid grid-cols-3 gap-2">
+            {(["power", "finesse", "vitality"] as const).map(key => (
+              <div key={key} className="text-center">
+                <span className="text-[10px] font-mono text-muted-foreground uppercase">{STAT_LABELS[key]}</span>
+                <div className="text-xl font-bold text-primary" style={{ fontFamily: "var(--font-display)" }}>{(c as any)[key] ?? 1}</div>
+              </div>
+            ))}
           </div>
-        ))}
+        </div>
+        <div>
+          <div className="text-[9px] font-mono text-blue-400 uppercase text-center mb-1">Mind</div>
+          <div className="grid grid-cols-3 gap-2">
+            {(["acumen", "diplomacy", "intuition"] as const).map(key => (
+              <div key={key} className="text-center">
+                <span className="text-[10px] font-mono text-muted-foreground uppercase">{STAT_LABELS[key]}</span>
+                <div className="text-xl font-bold text-primary" style={{ fontFamily: "var(--font-display)" }}>{(c as any)[key] ?? 1}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div>
+          <div className="text-[9px] font-mono text-violet-400 uppercase text-center mb-1">Spirit</div>
+          <div className="grid grid-cols-3 gap-2">
+            {(["talent", "moxie", "audacity"] as const).map(key => (
+              <div key={key} className="text-center">
+                <span className="text-[10px] font-mono text-muted-foreground uppercase">{STAT_LABELS[key]}</span>
+                <div className="text-xl font-bold text-primary" style={{ fontFamily: "var(--font-display)" }}>{(c as any)[key] ?? (key === "talent" ? 0 : 1)}</div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3">

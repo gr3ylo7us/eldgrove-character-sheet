@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { useParams, Link } from "wouter";
 import { useCharacter, useUpdateCharacter } from "@/hooks/use-characters";
 import { useLanguages, useFeats, useManeuvers } from "@/hooks/use-game-data";
@@ -5,7 +6,8 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Swords, BookOpen, Shield, Heart, Zap, Sparkles, Minus, Plus, Activity } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { ArrowLeft, Swords, BookOpen, Shield, Heart, Zap, Sparkles, Minus, Plus, Activity, Wand2, Languages } from "lucide-react";
 import { STAT_LABELS, getReflexes, getSeek, getNerve, getHealth, getWill, getAptitude, getMove, getEvade, getSkulk, getSeeleMax, getWeaponAttack, getSpellCast, getWoundscaleThreshold } from "@/lib/formulas";
 import type { Character } from "@shared/schema";
 
@@ -51,14 +53,29 @@ const WOUNDSCALE_STAGES = [
 function DatacardWoundBar({ wounds, onChange }: { wounds: number; onChange: (v: number) => void }) {
   const maxWounds = 30;
   const safeMax = Math.max(maxWounds, 1);
-  const currentStage = getWoundscaleThreshold(wounds);
-  const percentage = Math.min((wounds / safeMax) * 100, 100);
+  const [localWounds, setLocalWounds] = useState(wounds);
+  const [editing, setEditing] = useState(false);
+
+  useEffect(() => {
+    if (!editing) setLocalWounds(wounds);
+  }, [wounds, editing]);
+
+  const displayWounds = editing ? localWounds : wounds;
+  const currentStage = getWoundscaleThreshold(displayWounds);
+  const percentage = Math.min((displayWounds / safeMax) * 100, 100);
 
   const activeStage = WOUNDSCALE_STAGES.find((s, i) => {
     const next = WOUNDSCALE_STAGES[i + 1];
     if (!next) return true;
-    return wounds <= s.max;
+    return displayWounds <= s.max;
   }) || WOUNDSCALE_STAGES[WOUNDSCALE_STAGES.length - 1];
+
+  const commitValue = (v: number) => {
+    const clamped = Math.max(0, Math.min(maxWounds, v));
+    setLocalWounds(clamped);
+    setEditing(false);
+    onChange(clamped);
+  };
 
   return (
     <div className="space-y-2" data-testid="datacard-wound-bar">
@@ -87,11 +104,23 @@ function DatacardWoundBar({ wounds, onChange }: { wounds: number; onChange: (v: 
       </div>
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1">
-          <Button size="icon" variant="ghost" onClick={() => onChange(Math.max(0, wounds - 1))} data-testid="button-datacard-wound-dec">
+          <Button size="icon" variant="ghost" onClick={() => commitValue(displayWounds - 1)} data-testid="button-datacard-wound-dec">
             <Minus className="w-3 h-3" />
           </Button>
-          <span className="text-sm font-bold w-8 text-center">{wounds}</span>
-          <Button size="icon" variant="ghost" onClick={() => onChange(Math.min(maxWounds, wounds + 1))} data-testid="button-datacard-wound-inc">
+          <Input
+            type="number"
+            className="w-14 text-center"
+            value={displayWounds}
+            onFocus={() => setEditing(true)}
+            onChange={e => {
+              const v = Math.max(0, Math.min(maxWounds, parseInt(e.target.value) || 0));
+              setLocalWounds(v);
+            }}
+            onBlur={() => commitValue(localWounds)}
+            onKeyDown={e => { if (e.key === "Enter") commitValue(localWounds); }}
+            data-testid="input-datacard-wounds"
+          />
+          <Button size="icon" variant="ghost" onClick={() => commitValue(displayWounds + 1)} data-testid="button-datacard-wound-inc">
             <Plus className="w-3 h-3" />
           </Button>
         </div>
@@ -99,7 +128,7 @@ function DatacardWoundBar({ wounds, onChange }: { wounds: number; onChange: (v: 
           {WOUNDSCALE_STAGES.slice(1, -1).map((s) => (
             <div
               key={s.label}
-              className={`w-2 h-2 rounded-full ${wounds > s.max ? 'opacity-100' : 'opacity-20'} ${s.color}`}
+              className={`w-2 h-2 rounded-full ${displayWounds > s.max ? 'opacity-100' : 'opacity-20'} ${s.color}`}
               title={s.label}
             />
           ))}
@@ -113,7 +142,9 @@ function CombatDatacard({ character, onUpdate }: { character: Character; onUpdat
   const c = character;
   const equippedWeapons = (c.equippedWeapons as any[]) || [];
   const knownManeuvers = (c.knownManeuvers as string[]) || [];
+  const knownLangs = (c.knownLanguages as string[]) || [];
   const { data: allManeuvers } = useManeuvers();
+  const { data: allLanguages } = useLanguages();
   const woundscale = getWoundscaleThreshold(c.woundsCurrent ?? 0);
   const seeleMax = getSeeleMax(c);
 
@@ -176,6 +207,40 @@ function CombatDatacard({ character, onUpdate }: { character: Character; onUpdat
           })}
         </div>
       </Card>
+
+      {knownLangs.length > 0 && (
+        <Card className="p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Languages className="w-4 h-4 text-primary/70" />
+            <h4 className="text-xs font-mono text-muted-foreground uppercase">Magick Languages</h4>
+          </div>
+          <div className="space-y-2">
+            {knownLangs.map((lname, i) => {
+              const lang = allLanguages?.find(l => l.name === lname);
+              if (!lang) return null;
+              return (
+                <div key={i} className="p-2.5 bg-secondary/20 rounded" data-testid={`combat-lang-${i}`}>
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <Wand2 className="w-3.5 h-3.5 text-primary/50 shrink-0" />
+                      <span className="text-sm font-semibold">{lname}</span>
+                      <Badge variant="outline" className="text-xs">{lang.domain}</Badge>
+                    </div>
+                    <div className="flex gap-2 shrink-0">
+                      <Badge variant="secondary" className="text-xs">Cast: {getSpellCast(c, lang)}</Badge>
+                      <Badge variant="secondary" className="text-xs">Diff: {lang.difficulty}</Badge>
+                      {lang.damage && <Badge variant="secondary" className="text-xs">DMG: {lang.damage}</Badge>}
+                    </div>
+                  </div>
+                  {lang.tags && <div className="flex flex-wrap gap-1 mt-1.5">{(lang.tags as string).split(",").map((t, ti) => <Badge key={ti} variant="outline" className="text-[10px]">{t.trim()}</Badge>)}</div>}
+                  {lang.commands && <p className="text-xs text-muted-foreground mt-1.5"><span className="font-medium">Commands:</span> {lang.commands}</p>}
+                  {lang.effect && <p className="text-xs text-muted-foreground/70 italic mt-1">{lang.effect}</p>}
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
 
       {c.armorName && (
         <div className="text-center text-xs text-muted-foreground italic border-t border-border/30 pt-2">

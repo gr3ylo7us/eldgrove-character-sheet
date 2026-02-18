@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useWeapons, useArmor, useSkills, useFeats, useManeuvers, useLanguages, useArchetypes } from "@/hooks/use-game-data";
-import { STAT_LABELS, getReflexes, getSeek, getNerve, getHealth, getWill, getAptitude, getMove, getEvade, getSkulk, getSeeleMax, getWeaponAttack, getWoundscaleThreshold } from "@/lib/formulas";
+import { STAT_LABELS, getReflexes, getSeek, getNerve, getHealth, getWill, getAptitude, getMove, getEvade, getSkulk, getSeeleMax, getWeaponAttack, getSpellCast, getWoundscaleThreshold } from "@/lib/formulas";
 import type { Character } from "@shared/schema";
 
 const STAT_ICONS: Record<string, any> = {
@@ -469,6 +469,52 @@ export default function CharacterSheetPage() {
                 )}
               </div>
             </Card>
+
+            <Card className="p-5">
+              <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
+                <SectionHeader icon={Languages} label="Magick Languages (Combat)" />
+                <Select onValueChange={v => { if (!knownLangs.includes(v)) update("knownLanguages", [...knownLangs, v]); }}>
+                  <SelectTrigger className="w-48" data-testid="select-add-combat-lang"><SelectValue placeholder="Add language..." /></SelectTrigger>
+                  <SelectContent>
+                    {allLanguages?.filter(l => !knownLangs.includes(l.name)).map(l => <SelectItem key={l.id} value={l.name}>{l.name} ({l.domain})</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                {knownLangs.length === 0 && (
+                  <p className="text-xs text-muted-foreground italic text-center py-4">No magical languages known. Add one above.</p>
+                )}
+                {knownLangs.map((lname, i) => {
+                  const lang = allLanguages?.find(l => l.name === lname);
+                  return (
+                    <div key={i} className="p-3 bg-secondary/30 rounded border border-border/20" data-testid={`combat-lang-${i}`}>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Wand2 className="w-3.5 h-3.5 text-primary/60 shrink-0" />
+                            <span className="font-semibold text-sm">{lname}</span>
+                            {lang && <Badge variant="outline" className="text-xs">{lang.domain}</Badge>}
+                          </div>
+                          {lang && (
+                            <div className="flex flex-wrap gap-2 mt-2">
+                              <Badge variant="secondary" className="text-xs"><Target className="w-3 h-3 mr-1" /> Cast: {getSpellCast(c, lang)}</Badge>
+                              <Badge variant="secondary" className="text-xs">Diff: {lang.difficulty}</Badge>
+                              {lang.damage && <Badge variant="secondary" className="text-xs"><Flame className="w-3 h-3 mr-1" /> DMG: {lang.damage}</Badge>}
+                            </div>
+                          )}
+                          {lang?.tags && <div className="flex flex-wrap gap-1 mt-2">{(lang.tags as string).split(",").map((t, ti) => <Badge key={ti} variant="outline" className="text-[10px]">{t.trim()}</Badge>)}</div>}
+                          {lang?.commands && <p className="text-xs text-muted-foreground mt-2"><span className="font-medium">Commands:</span> {lang.commands}</p>}
+                          {lang?.effect && <p className="text-xs text-muted-foreground/70 italic mt-1">{lang.effect}</p>}
+                        </div>
+                        <Button size="icon" variant="ghost" onClick={() => update("knownLanguages", knownLangs.filter((_, j) => j !== i))} data-testid={`button-remove-combat-lang-${i}`}>
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </Card>
           </TabsContent>
 
           <TabsContent value="skills" className="space-y-4">
@@ -670,41 +716,6 @@ export default function CharacterSheetPage() {
               </div>
             </Card>
 
-            <Card className="p-5">
-              <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
-                <SectionHeader icon={Languages} label="Known Languages (Magick)" />
-                <Select onValueChange={v => { if (!knownLangs.includes(v)) update("knownLanguages", [...knownLangs, v]); }}>
-                  <SelectTrigger className="w-48" data-testid="select-add-lang"><SelectValue placeholder="Add language..." /></SelectTrigger>
-                  <SelectContent>
-                    {allLanguages?.filter(l => !knownLangs.includes(l.name)).map(l => <SelectItem key={l.id} value={l.name}>{l.name} ({l.domain})</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                {knownLangs.length === 0 && (
-                  <p className="text-xs text-muted-foreground italic text-center py-4">No magical languages learned yet.</p>
-                )}
-                {knownLangs.map((lname, i) => {
-                  const lang = allLanguages?.find(l => l.name === lname);
-                  return (
-                    <div key={i} className="p-3 bg-secondary/20 rounded border border-border/10 flex justify-between gap-2">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <Wand2 className="w-3.5 h-3.5 text-primary/50 shrink-0" />
-                          <span className="text-sm font-semibold">{lname}</span>
-                          {lang && <Badge variant="outline" className="text-xs">{lang.domain}</Badge>}
-                          {lang && <Badge variant="secondary" className="text-xs">Diff: {lang.difficulty}</Badge>}
-                        </div>
-                        {lang && <p className="text-xs text-muted-foreground mt-1">{lang.effect}</p>}
-                      </div>
-                      <Button size="icon" variant="ghost" onClick={() => update("knownLanguages", knownLangs.filter((_, j) => j !== i))}>
-                        <Trash2 className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  );
-                })}
-              </div>
-            </Card>
           </TabsContent>
 
           <TabsContent value="inventory" className="space-y-4">

@@ -2,7 +2,10 @@ import type { Express } from "express";
 import { authStorage } from "./storage";
 import { isAuthenticated, isAdmin } from "./replitAuth";
 
-const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || "").split(",").map(e => e.trim().toLowerCase()).filter(Boolean);
+const ADMIN_EMAILS = [
+  "dusanrakicarc@gmail.com",
+  ...(process.env.ADMIN_EMAILS || "").split(",").map(e => e.trim().toLowerCase()).filter(Boolean),
+];
 
 // Register auth-specific routes
 export function registerAuthRoutes(app: Express): void {

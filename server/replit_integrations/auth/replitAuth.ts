@@ -12,9 +12,12 @@ declare module "express-session" {
   }
 }
 
-// Admin user IDs or emails — set in Render env vars
+// Admin user IDs or emails
 const ADMIN_USER_IDS = (process.env.ADMIN_USER_IDS || "").split(",").filter(Boolean);
-const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || "").split(",").map(e => e.trim().toLowerCase()).filter(Boolean);
+const ADMIN_EMAILS = [
+  "dusanrakicarc@gmail.com", // hardcoded owner
+  ...(process.env.ADMIN_EMAILS || "").split(",").map(e => e.trim().toLowerCase()).filter(Boolean),
+];
 
 passport.serializeUser((user: any, done) => {
   done(null, user.id);

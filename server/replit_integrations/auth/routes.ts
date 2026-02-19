@@ -2,13 +2,20 @@ import type { Express } from "express";
 import { authStorage } from "./storage";
 import { isAuthenticated, isAdmin } from "./replitAuth";
 
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || "").split(",").map(e => e.trim().toLowerCase()).filter(Boolean);
+
 // Register auth-specific routes
 export function registerAuthRoutes(app: Express): void {
   // Get current authenticated user (includes access tier)
   app.get("/api/auth/user", isAuthenticated, async (req, res) => {
     try {
       const userId = req.session.userId!;
-      const user = await authStorage.getUser(userId);
+      let user = await authStorage.getUser(userId);
+      // Auto-fix: ensure admin emails always have admin tier
+      if (user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase()) && user.accessTier !== "admin") {
+        user = await authStorage.updateUserTier(userId, "admin") || user;
+        console.log(`[Auth] Auto-fixed ${user.email} to admin tier via /api/auth/user`);
+      }
       res.json(user);
     } catch (error) {
       console.error("Error fetching user:", error);

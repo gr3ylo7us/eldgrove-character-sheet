@@ -88,8 +88,8 @@ class AuthStorage implements IAuthStorage {
       .set({ redeemedBy: userId, redeemedAt: new Date() })
       .where(eq(accessKeys.key, key.toUpperCase().trim()));
 
-    // Upgrade user to standard
-    await this.updateUserTier(userId, "standard", { accessKeyUsed: key });
+    // Upgrade user to beta (full access)
+    await this.updateUserTier(userId, "beta", { accessKeyUsed: key });
 
     return { success: true, message: "Access key redeemed! You now have full access." };
   }

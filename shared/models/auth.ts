@@ -15,7 +15,7 @@ export const users = sqliteTable("users", {
   lastName: text("last_name"),
   profileImageUrl: text("profile_image_url"),
   // Access control
-  accessTier: text("access_tier").default("free"), // 'free' | 'standard' | 'patron' | 'admin'
+  accessTier: text("access_tier").default("free"), // 'free' | 'player' | 'gm' | 'beta' | 'admin'
   stripeCustomerId: text("stripe_customer_id"),
   patreonId: text("patreon_id"),
   accessKeyUsed: text("access_key_used"),

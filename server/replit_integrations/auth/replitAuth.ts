@@ -161,7 +161,7 @@ export const isAuthenticated: RequestHandler = (req, res, next) => {
   next();
 };
 
-// Middleware: user must have paid access (standard, patron, or admin)
+// Middleware: user must have paid access (player, gm, beta, or admin)
 export const hasPaidAccess: RequestHandler = async (req: any, res, next) => {
   if (!req.session.userId) {
     return res.status(401).json({ message: "Unauthorized" });

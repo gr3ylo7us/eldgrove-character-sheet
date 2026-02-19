@@ -90,10 +90,10 @@ export function registerStripeRoutes(app: Express) {
                 const userId = session.client_reference_id;
 
                 if (userId) {
-                    await authStorage.updateUserTier(userId, "standard", {
+                    await authStorage.updateUserTier(userId, "player", {
                         stripeCustomerId: session.customer as string,
                     });
-                    console.log(`[Stripe] User ${userId} upgraded to standard tier`);
+                    console.log(`[Stripe] User ${userId} upgraded to player tier`);
                 }
             }
 

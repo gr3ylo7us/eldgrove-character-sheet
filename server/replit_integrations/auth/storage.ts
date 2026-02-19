@@ -24,9 +24,16 @@ class AuthStorage implements IAuthStorage {
     // SQLite upsert: try insert, on conflict update
     const existing = await this.getUser(userData.id!);
     if (existing) {
+      // Only update profile fields, NEVER overwrite accessTier or payment fields
       await db
         .update(users)
-        .set({ ...userData, updatedAt: new Date() })
+        .set({
+          email: userData.email,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          profileImageUrl: userData.profileImageUrl,
+          updatedAt: new Date(),
+        })
         .where(eq(users.id, userData.id!));
       return (await this.getUser(userData.id!))!;
     } else {

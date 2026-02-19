@@ -23,6 +23,20 @@ export function registerAuthRoutes(app: Express): void {
     }
   });
 
+  // DEBUG: temporary endpoint to check admin email matching
+  app.get("/api/debug/whoami", isAuthenticated, async (req, res) => {
+    const userId = req.session.userId!;
+    const user = await authStorage.getUser(userId);
+    res.json({
+      userId,
+      email: user?.email,
+      accessTier: user?.accessTier,
+      adminEmailsEnv: process.env.ADMIN_EMAILS || "(not set)",
+      adminEmailsParsed: ADMIN_EMAILS,
+      emailMatch: user?.email ? ADMIN_EMAILS.includes(user.email.toLowerCase()) : false,
+    });
+  });
+
   // Redeem an access key
   app.post("/api/keys/redeem", isAuthenticated, async (req: any, res) => {
     const { key } = req.body;

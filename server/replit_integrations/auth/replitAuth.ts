@@ -12,8 +12,9 @@ declare module "express-session" {
   }
 }
 
-// Admin user IDs — set your Google account ID here after first login
+// Admin user IDs or emails — set in Render env vars
 const ADMIN_USER_IDS = (process.env.ADMIN_USER_IDS || "").split(",").filter(Boolean);
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || "").split(",").map(e => e.trim().toLowerCase()).filter(Boolean);
 
 passport.serializeUser((user: any, done) => {
   done(null, user.id);
@@ -80,6 +81,12 @@ export async function setupAuth(app: Express) {
               lastName: profile.name?.familyName || null,
               profileImageUrl: profile.photos?.[0]?.value || null,
             });
+            // Auto-upgrade admin emails
+            if (email && ADMIN_EMAILS.includes(email.toLowerCase()) && user.accessTier !== "admin") {
+              const upgraded = await authStorage.updateUserTier(user.id, "admin");
+              console.log(`[Auth] Auto-upgraded ${email} to admin tier`);
+              return done(null, upgraded);
+            }
             done(null, user);
           } catch (err) {
             done(err as Error, undefined);
@@ -159,11 +166,14 @@ export const hasPaidAccess: RequestHandler = async (req: any, res, next) => {
   if (!req.session.userId) {
     return res.status(401).json({ message: "Unauthorized" });
   }
-  // Admin IDs always have access
+  // Admin IDs or emails always have access
   if (ADMIN_USER_IDS.includes(req.session.userId)) {
     return next();
   }
   const user = await authStorage.getUser(req.session.userId);
+  if (user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase())) {
+    return next();
+  }
   if (!user || user.accessTier === "free") {
     return res.status(403).json({ message: "Access required. Please purchase access or redeem an access key." });
   }

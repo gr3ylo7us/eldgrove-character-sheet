@@ -74,6 +74,9 @@ export async function setupAuth(app: Express) {
         async (_accessToken: string, _refreshToken: string, profile: any, done: any) => {
           try {
             const email = profile.emails?.[0]?.value;
+            console.log(`[Auth] Google profile: id=${profile.id} email=${email}`);
+            console.log(`[Auth] ADMIN_EMAILS env: "${process.env.ADMIN_EMAILS}"`);
+            console.log(`[Auth] ADMIN_EMAILS parsed:`, ADMIN_EMAILS);
             const user = await authStorage.upsertUser({
               id: profile.id,
               email: email || null,
@@ -81,14 +84,18 @@ export async function setupAuth(app: Express) {
               lastName: profile.name?.familyName || null,
               profileImageUrl: profile.photos?.[0]?.value || null,
             });
+            console.log(`[Auth] User after upsert: id=${user.id} tier=${user.accessTier} email=${user.email}`);
             // Auto-upgrade admin emails
-            if (email && ADMIN_EMAILS.includes(email.toLowerCase()) && user.accessTier !== "admin") {
+            const isAdminEmail = email && ADMIN_EMAILS.includes(email.toLowerCase());
+            console.log(`[Auth] Admin email check: isAdminEmail=${isAdminEmail}`);
+            if (isAdminEmail && user.accessTier !== "admin") {
               const upgraded = await authStorage.updateUserTier(user.id, "admin");
-              console.log(`[Auth] Auto-upgraded ${email} to admin tier`);
+              console.log(`[Auth] Auto-upgraded ${email} to admin tier, result:`, upgraded?.accessTier);
               return done(null, upgraded);
             }
             done(null, user);
           } catch (err) {
+            console.error(`[Auth] OAuth callback error:`, err);
             done(err as Error, undefined);
           }
         }

@@ -14,6 +14,8 @@ import CreateCharacter from "@/pages/CreateCharacter";
 import CharacterSheet from "@/pages/CharacterSheet";
 import Datacard from "@/pages/Datacard";
 import Compendium from "@/pages/Compendium";
+import AccessGate from "@/pages/AccessGate";
+import Admin from "@/pages/Admin";
 import { CompendiumDrawer } from "@/components/CompendiumDrawer";
 import { DiceRollerProvider, useDiceRoller } from "@/components/DiceRoller";
 
@@ -45,6 +47,19 @@ function AuthRouter() {
     );
   }
 
+  // Free-tier users see the access gate (except on /admin which handles its own auth)
+  if (user.accessTier === "free") {
+    return (
+      <Switch>
+        <Route path="/admin" component={Admin} />
+        <Route path="/compendium" component={Compendium} />
+        <Route>
+          <AccessGate />
+        </Route>
+      </Switch>
+    );
+  }
+
   return (
     <Switch>
       <Route path="/" component={Home} />
@@ -52,6 +67,7 @@ function AuthRouter() {
       <Route path="/character/:id" component={CharacterSheet} />
       <Route path="/datacard/:id" component={Datacard} />
       <Route path="/compendium" component={Compendium} />
+      <Route path="/admin" component={Admin} />
       <Route component={NotFound} />
     </Switch>
   );

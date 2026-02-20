@@ -541,17 +541,22 @@ export async function reseedAll(): Promise<{ results: { table: string; count: nu
   return { results };
 }
 
-// Google Sheets tab name → database table name mapping
-// Tab names match the user's existing Google Sheet (uppercase)
-const SHEET_TAB_MAP: Record<string, string[]> = {
-  "WEAPONS": ["weapons"],
-  "ARMOR": ["armor"],
-  "ITEMS": ["items"],
-  "SKILLS": ["skills"],
-  "ARCHETYPES": ["archetypes"],
-  "FEATS AND MANEUVERS": ["feats", "maneuvers"],
-  "LANGUAGES": ["languages"],
-  "LEVELING TABLE": ["leveling"],
+// Google Sheets tab → database table mapping with GIDs for published sheet access
+// GIDs are required for published URLs (/d/e/KEY/pub) since sheet= param is ignored
+interface TabMapping {
+  tables: string[];  // DB table names to seed from this tab
+  gid: string;       // Google Sheet GID (found in pubhtml page source)
+}
+
+const SHEET_TAB_MAP: Record<string, TabMapping> = {
+  "WEAPONS": { tables: ["weapons"], gid: "1529015875" },
+  "ARMOR": { tables: ["armor"], gid: "1980251186" },
+  "ITEMS": { tables: ["items"], gid: "1564547127" },
+  "SKILLS": { tables: ["skills"], gid: "114391139" },
+  "ARCHETYPES": { tables: ["archetypes"], gid: "78033841" },
+  "FEATS AND MANEUVERS": { tables: ["feats", "maneuvers"], gid: "881662654" },
+  "LANGUAGES": { tables: ["languages"], gid: "973912154" },
+  "LEVELING TABLE": { tables: ["leveling"], gid: "244007665" },
 };
 
 export const GOOGLE_SHEET_TABS = Object.keys(SHEET_TAB_MAP);
@@ -571,15 +576,15 @@ function parseSheetInput(input: string): { type: "published" | "regular"; id: st
 }
 
 // Fetch a single tab from a Google Sheet as CSV text
-async function fetchSheetTab(sheetInput: string, tabName: string): Promise<string> {
+async function fetchSheetTab(sheetInput: string, tabName: string, gid: string): Promise<string> {
   const { type, id } = parseSheetInput(sheetInput);
   let url: string;
 
   if (type === "published") {
-    // Published format: /d/e/KEY/pub?output=csv&sheet=TAB
-    url = `https://docs.google.com/spreadsheets/d/e/${id}/pub?output=csv&sheet=${encodeURIComponent(tabName)}`;
+    // Published format uses GID: /d/e/KEY/pub?output=csv&gid=NUMBER
+    url = `https://docs.google.com/spreadsheets/d/e/${id}/pub?output=csv&gid=${gid}`;
   } else {
-    // Regular format: /d/ID/gviz/tq?tqx=out:csv&sheet=TAB
+    // Regular format can use sheet name: /d/ID/gviz/tq?tqx=out:csv&sheet=TAB
     url = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(tabName)}`;
   }
 
@@ -597,10 +602,10 @@ export async function syncFromGoogleSheet(sheetInput: string): Promise<{ results
   console.log(`Syncing from Google Sheet (${type}): ${id}`);
   const results: { table: string; count: number }[] = [];
 
-  for (const [tabName, tableNames] of Object.entries(SHEET_TAB_MAP)) {
+  for (const [tabName, mapping] of Object.entries(SHEET_TAB_MAP)) {
     try {
       console.log(`Fetching tab: ${tabName}...`);
-      const csvContent = await fetchSheetTab(sheetInput, tabName);
+      const csvContent = await fetchSheetTab(sheetInput, tabName, mapping.gid);
 
       if (!csvContent || csvContent.length < 10) {
         console.warn(`Tab "${tabName}" returned empty or very short content, skipping.`);
@@ -608,7 +613,7 @@ export async function syncFromGoogleSheet(sheetInput: string): Promise<{ results
       }
 
       // Re-seed each table that maps to this tab
-      for (const tableName of tableNames) {
+      for (const tableName of mapping.tables) {
         const result = await reseedFromContent(tableName, csvContent);
         results.push(result);
       }

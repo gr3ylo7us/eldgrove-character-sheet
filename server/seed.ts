@@ -332,3 +332,292 @@ export async function seedDatabase() {
 
   console.log("Seed complete!");
 }
+
+// Table name mapping for re-seed operations
+const TABLE_MAP: Record<string, { table: any; csvFile: string; seeder: (rows: string[][]) => any[] }> = {
+  weapons: {
+    table: weapons,
+    csvFile: "ELDGROVE [CHARSHEET_BETA_v1.0] - WEAPONS.csv",
+    seeder: (rows) => {
+      const data: any[] = [];
+      for (let i = 1; i < rows.length; i++) {
+        const r = rows[i];
+        if (!r[0] || r[0].trim() === "" || r[0].trim() === ",") continue;
+        const name = cleanName(r[0]);
+        if (!name || name.length < 2 || name.length > 40) continue;
+        if (!r[1] || r[1].trim() === "") continue;
+        const type = r[1].trim();
+        if (!type.includes("Weapon") && !type.includes("Explosive")) continue;
+        data.push({
+          name, type: r[1] || null, dice: safeInt(r[2]), mastery: r[3] || null,
+          normalDamage: safeInt(r[4]), critDamage: safeInt(r[5]), attacks: safeInt(r[6]),
+          damageType: r[7] || null, effects: r[8] || null, upgradeEffects: r[9] || null,
+          occupiedSlot: r[10] || null, keyword: r[11] || null, keywordEffect: r[12] || null,
+        });
+      }
+      return data;
+    },
+  },
+  armor: {
+    table: armor,
+    csvFile: "ELDGROVE [CHARSHEET_BETA_v1.0] - ARMOR.csv",
+    seeder: (rows) => {
+      const data: any[] = [];
+      for (let i = 1; i < rows.length; i++) {
+        const r = rows[i];
+        if (!r[0] || r[0].trim() === "") continue;
+        data.push({ name: r[0].trim(), protection: safeInt(r[1]), evasionDice: safeInt(r[2]), effects: r[3] || null });
+      }
+      return data;
+    },
+  },
+  items: {
+    table: items,
+    csvFile: "ELDGROVE [CHARSHEET_BETA_v1.0] - ITEMS.csv",
+    seeder: (rows) => {
+      const data: any[] = [];
+      for (let i = 1; i < rows.length; i++) {
+        const r = rows[i];
+        if (r[0] && r[0].trim() !== "") {
+          data.push({ name: r[0].trim(), rarity: safeInt(r[1]), bonuses: r[2] || null, category: "general", description: null, effects: null, usageDice: null });
+        }
+        if (r[9] && r[9].trim() !== "") {
+          data.push({ name: r[9].trim(), rarity: safeInt(r[10]), bonuses: null, category: "curio", description: r[11] || null, effects: r[12] || null, usageDice: r[16] || null });
+        }
+      }
+      return data;
+    },
+  },
+  skills: {
+    table: skills,
+    csvFile: "ELDGROVE [CHARSHEET_BETA_v1.0] - SKILLS.csv",
+    seeder: (rows) => {
+      const data: any[] = [];
+      for (let i = 1; i < rows.length; i++) {
+        const r = rows[i];
+        if (!r[1] || r[1].trim() === "") continue;
+        data.push({ name: r[1].trim(), stat: r[2] || null, category: r[3] || null, spiritStat: r[4] || null, overview: r[5] || null });
+      }
+      return data;
+    },
+  },
+  archetypes: {
+    table: archetypes,
+    csvFile: "ELDGROVE [CHARSHEET_BETA_v1.0] - ARCHETYPES.csv",
+    seeder: (rows) => {
+      const data: any[] = [];
+      for (let i = 1; i < rows.length; i++) {
+        const r = rows[i];
+        if (r[0] && r[0].trim() !== "" && r[0].trim() !== "Initiate Archetype" && r[0].trim() !== ",") {
+          const name = r[0].replace(/,/g, "").trim();
+          if (name.length > 0 && name.length < 40) {
+            data.push({ name, tier: "Initiate", features: [cleanFeature(r[1]), cleanFeature(r[2])].filter(f => f.length > 0) });
+          }
+        }
+        if (r[3] && r[3].trim() !== "" && r[3].trim() !== "Acolyte Archetype" && r[3].trim() !== ",") {
+          const name = r[3].replace(/,/g, "").trim();
+          if (name.length > 0 && name.length < 40) {
+            data.push({ name, tier: "Acolyte", features: [cleanFeature(r[4]), cleanFeature(r[5]), cleanFeature(r[6])].filter(f => f.length > 0) });
+          }
+        }
+        if (r[7] && r[7].trim() !== "" && r[7].trim() !== "Scholar Archetype" && r[7].trim() !== ",") {
+          const name = r[7].replace(/,/g, "").trim();
+          if (name.length > 0 && name.length < 40) {
+            data.push({ name, tier: "Scholar", features: [cleanFeature(r[8]), cleanFeature(r[9]), cleanFeature(r[10]), cleanFeature(r[11])].filter(f => f.length > 0) });
+          }
+        }
+      }
+      return data;
+    },
+  },
+  feats: {
+    table: feats,
+    csvFile: "ELDGROVE [CHARSHEET_BETA_v1.0] - FEATS AND MANEUVERS.csv",
+    seeder: (rows) => {
+      const data: any[] = [];
+      for (let i = 2; i < rows.length; i++) {
+        const r = rows[i];
+        if (r[1] && r[1].trim() !== "" && r[1].trim() !== "FEAT") {
+          data.push({ name: r[1].trim(), effect: r[2] || null, featType: r[3] || null, prerequisites: r[4] || null });
+        }
+      }
+      return data;
+    },
+  },
+  maneuvers: {
+    table: maneuvers,
+    csvFile: "ELDGROVE [CHARSHEET_BETA_v1.0] - FEATS AND MANEUVERS.csv",
+    seeder: (rows) => {
+      const data: any[] = [];
+      for (let i = 2; i < rows.length; i++) {
+        const r = rows[i];
+        if (r[7] && r[7].trim() !== "" && r[7].trim() !== "MANEUVER") {
+          data.push({ name: r[7].trim(), effect: r[8] || null, seeleCost: r[9] || null, prerequisite: r[10] || null });
+        }
+        if (r[11] && r[11].trim() !== "" && r[11].trim() !== "MANEUVER") {
+          data.push({ name: r[11].trim(), effect: r[12] || null, seeleCost: r[13] || null, prerequisite: null });
+        }
+      }
+      return data;
+    },
+  },
+  languages: {
+    table: languages,
+    csvFile: "ELDGROVE [CHARSHEET_BETA_v1.0] - LANGUAGES.csv",
+    seeder: (rows) => {
+      const data: any[] = [];
+      for (let i = 3; i < rows.length; i++) {
+        const r = rows[i];
+        if (!r[1] || r[1].trim() === "" || r[1].trim() === "Language") continue;
+        data.push({ name: r[1].trim(), domain: r[2] || null, effect: r[3] || null, commands: r[4] || null, difficulty: safeInt(r[5]), tags: r[6] || null, damage: r[7] || null, counters: {} });
+      }
+      return data;
+    },
+  },
+  leveling: {
+    table: levelingTable,
+    csvFile: "ELDGROVE [CHARSHEET_BETA_v1.0] - LEVELING TABLE.csv",
+    seeder: (rows) => {
+      const data: any[] = [];
+      for (let i = 2; i < rows.length; i++) {
+        const r = rows[i];
+        if (r[0] === undefined || r[0].trim() === "") continue;
+        data.push({ level: r[0].trim(), bonuses: r[1] || null });
+      }
+      return data;
+    },
+  },
+};
+
+// Valid table names for external use
+export const RESEEDABLE_TABLES = Object.keys(TABLE_MAP);
+
+// Re-seed a single table from its CSV file on disk
+export async function reseedTable(tableName: string): Promise<{ table: string; count: number }> {
+  const entry = TABLE_MAP[tableName];
+  if (!entry) throw new Error(`Unknown table: ${tableName}. Valid tables: ${RESEEDABLE_TABLES.join(", ")}`);
+
+  const rows = readCSV(entry.csvFile);
+  const data = entry.seeder(rows);
+
+  await db.delete(entry.table);
+  if (data.length > 0) await db.insert(entry.table).values(data);
+
+  console.log(`Re-seeded ${data.length} rows into ${tableName}`);
+  return { table: tableName, count: data.length };
+}
+
+// Re-seed a single table from raw CSV content (e.g. from an upload)
+export async function reseedFromContent(tableName: string, csvContent: string): Promise<{ table: string; count: number }> {
+  const entry = TABLE_MAP[tableName];
+  if (!entry) throw new Error(`Unknown table: ${tableName}. Valid tables: ${RESEEDABLE_TABLES.join(", ")}`);
+
+  // Also write the content to disk so the CSV file stays in sync
+  const filePath = path.join(process.cwd(), "data", "csv", entry.csvFile);
+  fs.writeFileSync(filePath, csvContent, "utf-8");
+
+  const rows = splitCSVRows(csvContent).map(parseCSVLine);
+  const data = entry.seeder(rows);
+
+  await db.delete(entry.table);
+  if (data.length > 0) await db.insert(entry.table).values(data);
+
+  console.log(`Re-seeded ${data.length} rows into ${tableName} from uploaded content`);
+  return { table: tableName, count: data.length };
+}
+
+// Re-seed ALL game data tables from CSV files on disk
+export async function reseedAll(): Promise<{ results: { table: string; count: number }[] }> {
+  const results: { table: string; count: number }[] = [];
+
+  // Feats and maneuvers share a CSV, so handle them together
+  const tableOrder = ["weapons", "armor", "items", "skills", "archetypes", "feats", "maneuvers", "languages", "leveling"];
+  for (const tableName of tableOrder) {
+    const result = await reseedTable(tableName);
+    results.push(result);
+  }
+
+  console.log("Full re-seed complete!");
+  return { results };
+}
+
+// Google Sheets tab name → database table name mapping
+// Tab names match the user's existing Google Sheet (uppercase)
+const SHEET_TAB_MAP: Record<string, string[]> = {
+  "WEAPONS": ["weapons"],
+  "ARMOR": ["armor"],
+  "ITEMS": ["items"],
+  "SKILLS": ["skills"],
+  "ARCHETYPES": ["archetypes"],
+  "FEATS AND MANEUVERS": ["feats", "maneuvers"],
+  "LANGUAGES": ["languages"],
+  "LEVELING TABLE": ["leveling"],
+};
+
+export const GOOGLE_SHEET_TABS = Object.keys(SHEET_TAB_MAP);
+
+// Extract sheet identifier from various Google Sheets URL formats
+function parseSheetInput(input: string): { type: "published" | "regular"; id: string } {
+  // Published URL: https://docs.google.com/spreadsheets/d/e/2PACX-.../pub?output=csv
+  const pubMatch = input.match(/\/spreadsheets\/d\/e\/([^/]+)\//);
+  if (pubMatch) return { type: "published", id: pubMatch[1] };
+
+  // Regular URL: https://docs.google.com/spreadsheets/d/SHEET_ID/edit
+  const regMatch = input.match(/\/spreadsheets\/d\/([^/]+)/);
+  if (regMatch) return { type: "regular", id: regMatch[1] };
+
+  // Bare ID
+  return { type: input.startsWith("2PACX") ? "published" : "regular", id: input.trim() };
+}
+
+// Fetch a single tab from a Google Sheet as CSV text
+async function fetchSheetTab(sheetInput: string, tabName: string): Promise<string> {
+  const { type, id } = parseSheetInput(sheetInput);
+  let url: string;
+
+  if (type === "published") {
+    // Published format: /d/e/KEY/pub?output=csv&sheet=TAB
+    url = `https://docs.google.com/spreadsheets/d/e/${id}/pub?output=csv&sheet=${encodeURIComponent(tabName)}`;
+  } else {
+    // Regular format: /d/ID/gviz/tq?tqx=out:csv&sheet=TAB
+    url = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(tabName)}`;
+  }
+
+  console.log(`  → ${url}`);
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch tab "${tabName}": HTTP ${response.status} ${response.statusText}`);
+  }
+  return await response.text();
+}
+
+// Sync ALL game data from a published Google Sheet
+export async function syncFromGoogleSheet(sheetInput: string): Promise<{ results: { table: string; count: number }[] }> {
+  const { type, id } = parseSheetInput(sheetInput);
+  console.log(`Syncing from Google Sheet (${type}): ${id}`);
+  const results: { table: string; count: number }[] = [];
+
+  for (const [tabName, tableNames] of Object.entries(SHEET_TAB_MAP)) {
+    try {
+      console.log(`Fetching tab: ${tabName}...`);
+      const csvContent = await fetchSheetTab(sheetInput, tabName);
+
+      if (!csvContent || csvContent.length < 10) {
+        console.warn(`Tab "${tabName}" returned empty or very short content, skipping.`);
+        continue;
+      }
+
+      // Re-seed each table that maps to this tab
+      for (const tableName of tableNames) {
+        const result = await reseedFromContent(tableName, csvContent);
+        results.push(result);
+      }
+    } catch (error: any) {
+      console.error(`Error syncing tab "${tabName}":`, error.message);
+      results.push({ table: tabName, count: -1 }); // -1 indicates failure
+    }
+  }
+
+  console.log("Google Sheets sync complete!");
+  return { results };
+}

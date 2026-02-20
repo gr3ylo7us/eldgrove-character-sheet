@@ -1,4 +1,7 @@
 import type { Express } from "express";
+import express from "express";
+import fs from "fs";
+import path from "path";
 import { authStorage } from "./storage";
 import { isAuthenticated, isAdmin } from "./replitAuth";
 
@@ -72,6 +75,109 @@ export function registerAuthRoutes(app: Express): void {
     } catch (error) {
       console.error("Error listing keys:", error);
       res.status(500).json({ message: "Failed to list keys" });
+    }
+  });
+
+  // Admin: Get list of reseedable table names
+  app.get("/api/admin/tables", isAdmin, async (_req, res) => {
+    const { RESEEDABLE_TABLES } = await import("../../seed");
+    res.json({ tables: RESEEDABLE_TABLES });
+  });
+
+  // Admin: Re-seed ALL game data tables from CSV files on disk
+  app.post("/api/admin/reseed", isAdmin, async (_req, res) => {
+    try {
+      const { reseedAll } = await import("../../seed");
+      const result = await reseedAll();
+      res.json({ message: "All game data re-seeded successfully", ...result });
+    } catch (error: any) {
+      console.error("Error re-seeding:", error);
+      res.status(500).json({ message: `Re-seed failed: ${error.message}` });
+    }
+  });
+
+  // Admin: Re-seed a single table from its CSV on disk
+  app.post("/api/admin/reseed/:table", isAdmin, async (req, res) => {
+    try {
+      const { reseedTable } = await import("../../seed");
+      const result = await reseedTable(req.params.table as string);
+      res.json({ message: `${req.params.table} re-seeded successfully`, ...result });
+    } catch (error: any) {
+      console.error("Error re-seeding table:", error);
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Admin: Upload CSV content for a specific table and re-seed it
+  app.post("/api/admin/upload-csv/:table", isAdmin, express.text({ type: "*/*", limit: "5mb" }), async (req, res) => {
+    try {
+      const csvContent = req.body as string;
+      if (!csvContent || csvContent.length < 10) {
+        return res.status(400).json({ message: "CSV content is empty or too short" });
+      }
+      const { reseedFromContent } = await import("../../seed");
+      const result = await reseedFromContent(req.params.table as string, csvContent);
+      res.json({ message: `${req.params.table} updated from uploaded CSV`, ...result });
+    } catch (error: any) {
+      console.error("Error uploading CSV:", error);
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // --- Google Sheet URL persistence ---
+  const configPath = path.join(process.cwd(), "data", "admin-config.json");
+
+  function loadConfig(): Record<string, string> {
+    try { return JSON.parse(fs.readFileSync(configPath, "utf-8")); } catch { return {}; }
+  }
+  function saveConfig(config: Record<string, string>) {
+    fs.mkdirSync(path.dirname(configPath), { recursive: true });
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf-8");
+  }
+
+  // Admin: Get saved Google Sheet URL
+  app.get("/api/admin/sheet-url", isAdmin, (_req, res) => {
+    const config = loadConfig();
+    res.json({ sheetUrl: config.sheetUrl || "" });
+  });
+
+  // Admin: Save Google Sheet URL
+  app.put("/api/admin/sheet-url", isAdmin, (req, res) => {
+    const { sheetUrl } = req.body;
+    const config = loadConfig();
+    config.sheetUrl = sheetUrl || "";
+    saveConfig(config);
+    res.json({ message: "Sheet URL saved.", sheetUrl: config.sheetUrl });
+  });
+
+  // Admin: Sync all game data from a published Google Sheet
+  app.post("/api/admin/sync-sheets", isAdmin, async (req, res) => {
+    try {
+      const { sheetId } = req.body;
+      if (!sheetId || typeof sheetId !== "string" || sheetId.length < 10) {
+        return res.status(400).json({ message: "A valid Google Sheet ID is required." });
+      }
+
+      // Auto-save the URL for future syncs
+      const config = loadConfig();
+      config.sheetUrl = sheetId;
+      saveConfig(config);
+
+      const { syncFromGoogleSheet } = await import("../../seed");
+      const result = await syncFromGoogleSheet(sheetId);
+
+      const failed = result.results.filter(r => r.count === -1);
+      if (failed.length > 0) {
+        return res.json({
+          message: `Sync completed with ${failed.length} tab(s) failing. Check server logs.`,
+          ...result,
+        });
+      }
+
+      res.json({ message: "All game data synced from Google Sheets!", ...result });
+    } catch (error: any) {
+      console.error("Error syncing from Google Sheets:", error);
+      res.status(500).json({ message: `Sync failed: ${error.message}` });
     }
   });
 }

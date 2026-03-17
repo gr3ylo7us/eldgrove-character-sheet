@@ -185,23 +185,55 @@ function FeatsManeuversTab({ search }: { search: string }) {
 
 function ArchetypesTab({ search }: { search: string }) {
   const { data: archetypes } = useArchetypes();
-  const filtered = (archetypes ?? []).filter((a: Archetype) => a.name.toLowerCase().includes(search.toLowerCase()));
+  const searchLower = search.toLowerCase();
+  
+  // Filter matching archetypes
+  const filtered = (archetypes ?? []).filter((a: Archetype) => a.name.toLowerCase().includes(searchLower) || (a.tier && a.tier.toLowerCase().includes(searchLower)));
+  
+  // Group by unique names
+  const uniqueNames = Array.from(new Set(filtered.map(a => a.name)));
+
   return (
-    <div className="space-y-2">
-      {filtered.map((a: Archetype) => (
-        <Card key={a.id} className="p-3">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-semibold">{a.name}</span>
-            {a.tier && <Badge variant="secondary" className="text-[10px]">{a.tier}</Badge>}
-          </div>
-          {Array.isArray(a.features) && (a.features as any[]).map((f: any, i: number) => (
-            <div key={i} className="mt-1">
-              <span className="text-xs font-semibold text-primary/80">{f.name}</span>
-              {f.description && <p className="text-[11px] text-muted-foreground/70">{f.description}</p>}
+    <div className="space-y-4">
+      {uniqueNames.map(name => {
+        const tiers = (archetypes ?? []).filter(a => a.name === name);
+        const order = ["Initiate", "Acolyte", "Scholar"];
+        tiers.sort((a, b) => order.indexOf(a.tier || "") - order.indexOf(b.tier || ""));
+
+        return (
+          <Card key={name} className="p-4 space-y-4">
+            <div className="flex items-center gap-2 border-b border-border/50 pb-2">
+              <span className="text-sm font-bold text-primary" style={{ fontFamily: "var(--font-display)" }}>{name}</span>
             </div>
-          ))}
-        </Card>
-      ))}
+            {tiers.map(t => {
+              let features: string[] = [];
+              if (Array.isArray(t.features)) {
+                features = t.features;
+              } else if (typeof t.features === "string") {
+                try {
+                  const parsed = JSON.parse(t.features);
+                  features = Array.isArray(parsed) ? parsed : [t.features];
+                } catch (e) {
+                  features = [t.features as string];
+                }
+              }
+              if (features.length === 0) return null;
+              
+              return (
+                <div key={t.id} className="space-y-2">
+                  <Badge variant="secondary" className="text-[10px]">{t.tier}</Badge>
+                  <div className="space-y-1">
+                    {features.map((f, i) => (
+                      <p key={i} className="text-[11px] text-muted-foreground/90 bg-secondary/20 p-2 rounded">{f}</p>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </Card>
+        );
+      })}
+      {uniqueNames.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">No archetypes found.</p>}
     </div>
   );
 }
@@ -230,7 +262,7 @@ export function CompendiumDrawer({ open, onOpenChange }: CompendiumDrawerProps) 
         />
 
         <Tabs value={tab} onValueChange={setTab}>
-          <TabsList className="flex-wrap gap-1 mb-3">
+          <TabsList className="flex-wrap gap-1 mb-3 h-auto p-1.5 justify-start">
             <TabsTrigger value="rules" className="text-xs"><BookOpen className="w-3 h-3 mr-1" />Rules</TabsTrigger>
             <TabsTrigger value="weapons" className="text-xs"><Swords className="w-3 h-3 mr-1" />Weapons</TabsTrigger>
             <TabsTrigger value="armor" className="text-xs"><Shield className="w-3 h-3 mr-1" />Armor</TabsTrigger>

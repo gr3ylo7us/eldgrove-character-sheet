@@ -602,10 +602,52 @@ export async function syncFromGoogleSheet(sheetInput: string): Promise<{ results
   console.log(`Syncing from Google Sheet (${type}): ${id}`);
   const results: { table: string; count: number }[] = [];
 
+  // If published, we need to extract the actual GIDs from the pubhtml page
+  // because hardcoded GIDs from the original sheet won't work for user-created sheets.
+  let dynamicGids: Record<string, string> = {};
+  if (type === "published") {
+    try {
+      console.log("Fetching pubhtml to extract dynamic GIDs...");
+      const pubhtmlUrl = `https://docs.google.com/spreadsheets/d/e/${id}/pubhtml`;
+      const htmlRes = await fetch(pubhtmlUrl);
+      if (!htmlRes.ok) throw new Error(`HTTP ${htmlRes.status}`);
+      const html = await htmlRes.text();
+      
+      // Look for the window.viewerData parsing to get the sheet names -> GIDs
+      // e.g. {name: "WEAPONS", gid: "12345678"}
+      // First approach: Extract from the menu HTML structure
+      const nameMatch = html.matchAll(/<li[^>]*id="sheet-button-([^"]+)"/g);
+      for (const match of nameMatch) {
+         const gid = match[1];
+         const nameRegex = new RegExp(`id="sheet-button-${gid}"[^>]*>\\s*<a[^>]*>(.*?)</a>`, 'is');
+         const nMatch = html.match(nameRegex);
+         if (nMatch && nMatch[1]) {
+           const tabName = nMatch[1].trim().toUpperCase();
+           dynamicGids[tabName] = gid;
+         }
+      }
+      
+      // Second approach (often more reliable): Look for the embedded JSON in scripts
+      // The sheets array often looks like: [ {name: "Weapons", gid: "12345"}, ... ]
+      const scriptMatches = html.matchAll(/{name:\s*"([^"]+)",\s*gid:\s*"(\d+)"/g);
+      for (const match of scriptMatches) {
+        const tabName = match[1].trim().toUpperCase();
+        const gid = match[2];
+        dynamicGids[tabName] = gid;
+      }
+      
+      console.log("Extracted dynamic GIDs:", dynamicGids);
+    } catch (e: any) {
+      console.error("Failed to extract dynamic GIDs. Will fallback to hardcoded ones.", e.message);
+    }
+  }
+
   for (const [tabName, mapping] of Object.entries(SHEET_TAB_MAP)) {
     try {
       console.log(`Fetching tab: ${tabName}...`);
-      const csvContent = await fetchSheetTab(sheetInput, tabName, mapping.gid);
+      // Use dynamic GID if found, otherwise fallback to mapping.gid (which might fail if it's a new sheet)
+      const targetGid = dynamicGids[tabName.toUpperCase()] || dynamicGids[tabName] || mapping.gid;
+      const csvContent = await fetchSheetTab(sheetInput, tabName, targetGid);
 
       if (!csvContent || csvContent.length < 10) {
         console.warn(`Tab "${tabName}" returned empty or very short content, skipping.`);

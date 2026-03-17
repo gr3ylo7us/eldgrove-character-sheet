@@ -26,7 +26,7 @@ type DetailItem =
   | { type: "leveling"; data: LevelingEntry }
   | null;
 
-function DetailDialog({ item, onClose }: { item: DetailItem; onClose: () => void }) {
+function DetailDialog({ item, onClose, allArchetypes }: { item: DetailItem; onClose: () => void; allArchetypes?: Archetype[] }) {
   if (!item) return null;
 
   return (
@@ -45,7 +45,7 @@ function DetailDialog({ item, onClose }: { item: DetailItem; onClose: () => void
         {item.type === "feat" && <FeatDetail data={item.data} />}
         {item.type === "maneuver" && <ManeuverDetail data={item.data} />}
         {item.type === "language" && <LanguageDetail data={item.data} />}
-        {item.type === "archetype" && <ArchetypeDetail data={item.data} />}
+        {item.type === "archetype" && <ArchetypeDetail data={item.data} allArchetypes={allArchetypes} />}
         {item.type === "leveling" && <LevelingDetail data={item.data} />}
       </DialogContent>
     </Dialog>
@@ -168,23 +168,43 @@ function LanguageDetail({ data }: { data: Language }) {
   );
 }
 
-function ArchetypeDetail({ data }: { data: Archetype }) {
-  const features = (data.features as string[]) || [];
+function ArchetypeDetail({ data, allArchetypes }: { data: Archetype, allArchetypes?: Archetype[] }) {
+  const allTiers = allArchetypes ? allArchetypes.filter(a => a.name === data.name) : [data];
+  const order = ["Initiate", "Acolyte", "Scholar"];
+  allTiers.sort((a, b) => order.indexOf(a.tier || "") - order.indexOf(b.tier || ""));
+
   return (
-    <div className="space-y-3" data-testid="detail-archetype">
-      <div className="flex items-center gap-2">
-        <Badge variant="secondary">{data.tier}</Badge>
-      </div>
-      {features.length > 0 && (
-        <div className="space-y-2 mt-3">
-          <span className="text-xs font-mono text-muted-foreground uppercase tracking-wider">Features</span>
-          {features.map((f, i) => (
-            <div key={i} className="p-3 bg-secondary/30 rounded">
-              <p className="text-sm">{f}</p>
+    <div className="space-y-6" data-testid="detail-archetype">
+      {allTiers.map(tierData => {
+        let features: string[] = [];
+        if (Array.isArray(tierData.features)) {
+          features = tierData.features;
+        } else if (typeof tierData.features === "string") {
+          try {
+            const parsed = JSON.parse(tierData.features);
+            features = Array.isArray(parsed) ? parsed : [tierData.features];
+          } catch (e) {
+            features = [tierData.features as string];
+          }
+        }
+
+        if (features.length === 0) return null;
+
+        return (
+          <div key={tierData.id} className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary">{tierData.tier}</Badge>
             </div>
-          ))}
-        </div>
-      )}
+            <div className="space-y-2 mt-3">
+              {features.map((f, i) => (
+                <div key={i} className="p-3 bg-secondary/30 rounded">
+                  <p className="text-sm">{f}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -452,7 +472,7 @@ export default function CompendiumPage() {
         </Tabs>
       </div>
 
-      <DetailDialog item={detail} onClose={() => setDetail(null)} />
+      <DetailDialog item={detail} onClose={() => setDetail(null)} allArchetypes={archList} />
     </div>
   );
 }

@@ -172,6 +172,23 @@ await client.executeMultiple(`
     level TEXT NOT NULL,
     bonuses TEXT
   );
+
+  CREATE TABLE IF NOT EXISTS games (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    invite_code TEXT NOT NULL UNIQUE,
+    owner_id TEXT NOT NULL,
+    created_at INTEGER
+  );
+
+  CREATE TABLE IF NOT EXISTS game_members (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    game_id INTEGER NOT NULL,
+    user_id TEXT NOT NULL,
+    role TEXT NOT NULL,
+    character_id INTEGER,
+    joined_at INTEGER
+  );
 `);
 
 export const db = drizzle(client, { schema });

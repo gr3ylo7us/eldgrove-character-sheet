@@ -145,6 +145,82 @@ export async function registerRoutes(
     }
   });
 
+  // --- VTT & Chat Routes ---
+  app.get(api.vtt.scenes.list.path, hasPaidAccess, async (req: any, res) => {
+    const gameId = parseInt(req.params.gameId);
+    if (isNaN(gameId)) return res.status(400).json({ message: "Invalid ID" });
+    res.json(await storage.getScenesForGame(gameId));
+  });
+
+  app.post(api.vtt.scenes.create.path, hasPaidAccess, async (req: any, res) => {
+    const gameId = parseInt(req.params.gameId);
+    if (isNaN(gameId)) return res.status(400).json({ message: "Invalid ID" });
+    try {
+      res.status(201).json(await storage.createScene({ ...req.body, gameId }));
+    } catch (e) {
+      res.status(400).json({ message: "Invalid scene data" });
+    }
+  });
+
+  app.put(api.vtt.scenes.update.path, hasPaidAccess, async (req: any, res) => {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+    res.json(await storage.updateScene(id, req.body));
+  });
+
+  app.delete(api.vtt.scenes.delete.path, hasPaidAccess, async (req: any, res) => {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+    await storage.deleteScene(id);
+    res.status(204).end();
+  });
+
+  app.get(api.vtt.tokens.list.path, hasPaidAccess, async (req: any, res) => {
+    const sceneId = parseInt(req.params.sceneId);
+    if (isNaN(sceneId)) return res.status(400).json({ message: "Invalid ID" });
+    res.json(await storage.getTokensForScene(sceneId));
+  });
+
+  app.post(api.vtt.tokens.create.path, hasPaidAccess, async (req: any, res) => {
+    const sceneId = parseInt(req.params.sceneId);
+    if (isNaN(sceneId)) return res.status(400).json({ message: "Invalid ID" });
+    try {
+      res.status(201).json(await storage.createToken({ ...req.body, sceneId }));
+    } catch (e) {
+      res.status(400).json({ message: "Invalid token data" });
+    }
+  });
+
+  app.put(api.vtt.tokens.update.path, hasPaidAccess, async (req: any, res) => {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+    res.json(await storage.updateToken(id, req.body));
+  });
+
+  app.delete(api.vtt.tokens.delete.path, hasPaidAccess, async (req: any, res) => {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+    await storage.deleteToken(id);
+    res.status(204).end();
+  });
+
+  app.get(api.vtt.chat.list.path, hasPaidAccess, async (req: any, res) => {
+    const gameId = parseInt(req.params.gameId);
+    if (isNaN(gameId)) return res.status(400).json({ message: "Invalid ID" });
+    res.json(await storage.getChatMessagesForGame(gameId));
+  });
+
+  app.post(api.vtt.chat.create.path, hasPaidAccess, async (req: any, res) => {
+    const gameId = parseInt(req.params.gameId);
+    if (isNaN(gameId)) return res.status(400).json({ message: "Invalid ID" });
+    try {
+      const msg = { ...req.body, gameId, userId: req.session.userId };
+      res.status(201).json(await storage.createChatMessage(msg));
+    } catch (e) {
+      res.status(400).json({ message: "Invalid chat data" });
+    }
+  });
+
   // Game data routes — public (needed for Compendium)
   app.get(api.data.weapons.path, async (_req, res) => res.json(await storage.getWeapons()));
   app.get(api.data.armor.path, async (_req, res) => res.json(await storage.getArmor()));

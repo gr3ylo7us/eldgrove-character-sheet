@@ -64,6 +64,46 @@ export const gameMembers = sqliteTable("game_members", {
   joinedAt: integer("joined_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
 });
 
+export const scenes = sqliteTable("scenes", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  gameId: integer("game_id").notNull(),
+  name: text("name").notNull(),
+  backgroundUrl: text("background_url"),
+  gridWidth: integer("grid_width").default(20),
+  gridHeight: integer("grid_height").default(20),
+  isActive: integer("is_active", { mode: "boolean" }).default(false),
+  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+});
+
+export const tokens = sqliteTable("tokens", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  sceneId: integer("scene_id").notNull(),
+  characterId: integer("character_id"),
+  name: text("name").notNull(),
+  imageUrl: text("image_url"),
+  x: integer("x").default(0),
+  y: integer("y").default(0),
+  size: integer("size").default(1),
+});
+
+export const chatMessages = sqliteTable("chat_messages", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  gameId: integer("game_id").notNull(),
+  userId: text("user_id").notNull(),
+  characterId: integer("character_id"),
+  senderName: text("sender_name").notNull(),
+  type: text("type").notNull(), // 'text', 'roll', 'image'
+  content: text("content").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+});
+
+export type Scene = typeof scenes.$inferSelect;
+export type InsertScene = typeof scenes.$inferInsert;
+export type Token = typeof tokens.$inferSelect;
+export type InsertToken = typeof tokens.$inferInsert;
+export type ChatMessage = typeof chatMessages.$inferSelect;
+export type InsertChatMessage = typeof chatMessages.$inferInsert;
+
 export const weapons = sqliteTable("weapons", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),

@@ -22,6 +22,24 @@ export const api = {
     getMembers: { method: 'GET' as const, path: '/api/games/:id/members' as const, responses: { 200: z.any() } },
     updateMember: { method: 'PUT' as const, path: '/api/games/:id/members/me' as const, input: z.object({ characterId: z.number().nullable() }), responses: { 200: z.any() } },
   },
+  vtt: {
+    scenes: {
+      list: { method: 'GET' as const, path: '/api/games/:gameId/scenes' as const, responses: { 200: z.any() } },
+      create: { method: 'POST' as const, path: '/api/games/:gameId/scenes' as const, input: z.any(), responses: { 201: z.any() } },
+      update: { method: 'PUT' as const, path: '/api/scenes/:id' as const, input: z.any(), responses: { 200: z.any() } },
+      delete: { method: 'DELETE' as const, path: '/api/scenes/:id' as const, responses: { 204: z.any() } },
+    },
+    tokens: {
+      list: { method: 'GET' as const, path: '/api/scenes/:sceneId/tokens' as const, responses: { 200: z.any() } },
+      create: { method: 'POST' as const, path: '/api/scenes/:sceneId/tokens' as const, input: z.any(), responses: { 201: z.any() } },
+      update: { method: 'PUT' as const, path: '/api/tokens/:id' as const, input: z.any(), responses: { 200: z.any() } },
+      delete: { method: 'DELETE' as const, path: '/api/tokens/:id' as const, responses: { 204: z.any() } },
+    },
+    chat: {
+      list: { method: 'GET' as const, path: '/api/games/:gameId/chat' as const, responses: { 200: z.any() } },
+      create: { method: 'POST' as const, path: '/api/games/:gameId/chat' as const, input: z.any(), responses: { 201: z.any() } },
+    }
+  },
   data: {
     weapons: { method: 'GET' as const, path: '/api/data/weapons' as const, responses: { 200: z.any() } },
     armor: { method: 'GET' as const, path: '/api/data/armor' as const, responses: { 200: z.any() } },

@@ -2,11 +2,13 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+import { setupVTTWebSockets } from "./vtt";
 
 const app = express();
 // Trust Render's reverse proxy so secure cookies work behind HTTPS termination
 app.set("trust proxy", 1);
 const httpServer = createServer(app);
+setupVTTWebSockets(httpServer);
 
 declare module "http" {
   interface IncomingMessage {

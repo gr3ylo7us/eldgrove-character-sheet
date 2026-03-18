@@ -60,6 +60,8 @@ interface DiceRollerContextType {
   closeRoller: () => void;
   isOpen: boolean;
   onSkulkSpent: React.MutableRefObject<((amount: number) => void) | null>;
+  setGameBroadcastContext: (gameId: number, senderName: string, wsSendMessage: (msg: any) => void) => void;
+  clearGameBroadcastContext: () => void;
 }
 
 const DiceRollerContext = createContext<DiceRollerContextType | null>(null);
@@ -310,6 +312,7 @@ export function DiceRollerProvider({ children }: { children: React.ReactNode }) 
   const [manualLabel, setManualLabel] = useState("Manual Roll");
   const [pendingSilentRoll, setPendingSilentRoll] = useState<RollOptions | null>(null);
   const onSkulkSpentRef = useRef<((amount: number) => void) | null>(null);
+  const [broadcastCtx, setBroadcastCtx] = useState<{ gameId: number, senderName: string, wsSendMessage: (msg: any) => void } | null>(null);
 
   const executeRoll = useCallback((opts: RollOptions, sneakDice: number = 0): RollResult => {
     const { poolSize, label, threshold = 11, effects, rollType = "manual", damageInfo } = opts;
@@ -336,8 +339,29 @@ export function DiceRollerProvider({ children }: { children: React.ReactNode }) 
       sneakDice,
     };
     setHistory(prev => [rollResult, ...prev].slice(0, 20));
+    
+    // Broadcast to VTT if active
+    if (broadcastCtx) {
+      fetch(`/api/games/${broadcastCtx.gameId}/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "roll",
+          content: JSON.stringify({
+            label: rollResult.label,
+            poolSize: rollResult.poolSize,
+            results: rollResult.dice.map(d => d.value),
+            successes: rollResult.netSuccesses
+          }),
+          senderName: broadcastCtx.senderName
+        })
+      }).then(res => res.json()).then(savedMsg => {
+        broadcastCtx.wsSendMessage({ type: "chat", payload: savedMsg });
+      }).catch(err => console.error("Failed to broadcast roll", err));
+    }
+    
     return rollResult;
-  }, []);
+  }, [broadcastCtx]);
 
   const rollDice = useCallback((opts: RollOptions): RollResult | null => {
     if (opts.isSilent && (opts.skulkAvailable ?? 0) > 0) {
@@ -390,7 +414,15 @@ export function DiceRollerProvider({ children }: { children: React.ReactNode }) 
   }, []);
 
   return (
-    <DiceRollerContext.Provider value={{ rollDice, openRoller: () => setIsOpen(true), closeRoller: () => setIsOpen(false), isOpen, onSkulkSpent: onSkulkSpentRef }}>
+    <DiceRollerContext.Provider value={{ 
+      rollDice, 
+      openRoller: () => setIsOpen(true), 
+      closeRoller: () => setIsOpen(false), 
+      isOpen, 
+      onSkulkSpent: onSkulkSpentRef,
+      setGameBroadcastContext: (gameId, senderName, wsSendMessage) => setBroadcastCtx({ gameId, senderName, wsSendMessage }),
+      clearGameBroadcastContext: () => setBroadcastCtx(null)
+    }}>
       {children}
       <Sheet open={isOpen} onOpenChange={(open) => { setIsOpen(open); if (!open) setPendingSilentRoll(null); }}>
         <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto" data-testid="dice-roller-drawer">

@@ -2,7 +2,9 @@ import {
   characters, weapons, armor, items, skills, archetypes, feats, maneuvers, languages, levelingTable, games, gameMembers,
   type Character, type InsertCharacter, type Weapon, type Armor, type Item,
   type Skill, type Archetype, type Feat, type Maneuver, type Language, type LevelingEntry,
-  type Game, type InsertGame, type GameMember, type InsertGameMember
+  type Game, type InsertGame, type GameMember, type InsertGameMember,
+  type Scene, type InsertScene, type Token, type InsertToken, type ChatMessage, type InsertChatMessage,
+  scenes, tokens, chatMessages
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and } from "drizzle-orm";
@@ -28,9 +30,23 @@ export interface IStorage {
   getGameByInviteCode(code: string): Promise<Game | undefined>;
   getGamesForUser(userId: string): Promise<{ game: Game; role: string }[]>;
   getGame(id: number): Promise<Game | undefined>;
-  joinGame(member: InsertGameMember): Promise<GameMember>;
+  joinGame(data: InsertGameMember): Promise<GameMember>;
   getGameMembers(gameId: number): Promise<(GameMember & { character?: Character | null })[]>;
   updateGameMemberCharacter(gameId: number, userId: string, characterId: number | null): Promise<void>;
+
+  // VTT
+  getScenesForGame(gameId: number): Promise<Scene[]>;
+  createScene(scene: InsertScene): Promise<Scene>;
+  updateScene(id: number, data: Partial<InsertScene>): Promise<Scene | undefined>;
+  deleteScene(id: number): Promise<void>;
+  
+  getTokensForScene(sceneId: number): Promise<Token[]>;
+  createToken(token: InsertToken): Promise<Token>;
+  updateToken(id: number, data: Partial<InsertToken>): Promise<Token | undefined>;
+  deleteToken(id: number): Promise<void>;
+  
+  getChatMessagesForGame(gameId: number): Promise<ChatMessage[]>;
+  createChatMessage(message: InsertChatMessage): Promise<ChatMessage>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -128,6 +144,47 @@ export class DatabaseStorage implements IStorage {
   }
   async updateGameMemberCharacter(gameId: number, userId: string, characterId: number | null) {
     await db.update(gameMembers).set({ characterId }).where(and(eq(gameMembers.gameId, gameId), eq(gameMembers.userId, userId)));
+  }
+
+  // VTT - Scenes
+  async getScenesForGame(gameId: number) {
+    return db.select().from(scenes).where(eq(scenes.gameId, gameId));
+  }
+  async createScene(data: InsertScene) {
+    const result = await db.insert(scenes).values(data).returning();
+    return result[0];
+  }
+  async updateScene(id: number, data: Partial<InsertScene>) {
+    const result = await db.update(scenes).set(data).where(eq(scenes.id, id)).returning();
+    return result[0];
+  }
+  async deleteScene(id: number) {
+    await db.delete(scenes).where(eq(scenes.id, id));
+  }
+
+  // VTT - Tokens
+  async getTokensForScene(sceneId: number) {
+    return db.select().from(tokens).where(eq(tokens.sceneId, sceneId));
+  }
+  async createToken(data: InsertToken) {
+    const result = await db.insert(tokens).values(data).returning();
+    return result[0];
+  }
+  async updateToken(id: number, data: Partial<InsertToken>) {
+    const result = await db.update(tokens).set(data).where(eq(tokens.id, id)).returning();
+    return result[0];
+  }
+  async deleteToken(id: number) {
+    await db.delete(tokens).where(eq(tokens.id, id));
+  }
+
+  // VTT - Chat
+  async getChatMessagesForGame(gameId: number) {
+    return db.select().from(chatMessages).where(eq(chatMessages.gameId, gameId)).orderBy(chatMessages.createdAt);
+  }
+  async createChatMessage(data: InsertChatMessage) {
+    const result = await db.insert(chatMessages).values(data).returning();
+    return result[0];
   }
 }
 

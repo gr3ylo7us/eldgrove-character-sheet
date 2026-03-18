@@ -189,6 +189,39 @@ await client.executeMultiple(`
     character_id INTEGER,
     joined_at INTEGER
   );
+
+  CREATE TABLE IF NOT EXISTS scenes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    game_id INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    background_url TEXT,
+    grid_width INTEGER DEFAULT 20,
+    grid_height INTEGER DEFAULT 20,
+    is_active INTEGER DEFAULT 0,
+    created_at INTEGER
+  );
+
+  CREATE TABLE IF NOT EXISTS tokens (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    scene_id INTEGER NOT NULL,
+    character_id INTEGER,
+    name TEXT NOT NULL,
+    image_url TEXT,
+    x INTEGER DEFAULT 0,
+    y INTEGER DEFAULT 0,
+    size INTEGER DEFAULT 1
+  );
+
+  CREATE TABLE IF NOT EXISTS chat_messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    game_id INTEGER NOT NULL,
+    user_id TEXT NOT NULL,
+    character_id INTEGER,
+    sender_name TEXT NOT NULL,
+    type TEXT NOT NULL,
+    content TEXT NOT NULL,
+    created_at INTEGER
+  );
 `);
 
 export const db = drizzle(client, { schema });

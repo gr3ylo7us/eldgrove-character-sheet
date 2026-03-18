@@ -3,21 +3,153 @@ import { useGame, useGameMembers, useUpdateGameMember } from "@/hooks/use-games"
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Castle, Users, Info, ArrowLeft, Dices, Shield, UserPlus } from "lucide-react";
+import { Castle, Users, Info, ArrowLeft, Dices, Shield as ShieldIcon, UserPlus, Map as MapIcon, Plus } from "lucide-react";
 import { Link } from "wouter";
 import { useCharacters } from "@/hooks/use-characters";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { getEvade, getWoundscaleThreshold, getWeaponAttack } from "@/lib/formulas";
-import { Badge } from "@/components/ui/badge";
-import { Swords, Heart, Shield as ShieldIcon, EyeOff } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useVTTWebSocket } from "@/hooks/use-vtt";
+import { useScenes, useCreateScene, useUpdateScene, useCreateToken } from "@/hooks/use-vtt-api";
+import { VTTCanvas } from "@/components/vtt/VTTCanvas";
+import { ChatLog } from "@/components/vtt/ChatLog";
+import { useDiceRoller } from "@/components/DiceRoller";
+import { Input } from "@/components/ui/input";
+import { Heart, Swords, EyeOff } from "lucide-react";
 
 // Helper to calculate max attack dice based on equipped weapons
 function getMaxAttackDice(char: any) {
   const weapons = Array.isArray(char.equippedWeapons) ? char.equippedWeapons : [];
   if (weapons.length === 0) return 0;
   return Math.max(...weapons.map((w: any) => getWeaponAttack(char, w)));
+}
+
+function VTTTable({ game, myMemberRecord, isGM }: any) {
+  const { user } = useAuth();
+  const { lastMessage, sendMessage, isConnected } = useVTTWebSocket(game.id, myMemberRecord?.characterId);
+  const { data: scenes = [] } = useScenes(game.id);
+  const { mutate: createScene, isPending: isCreatingScene } = useCreateScene();
+  const { mutate: updateScene } = useUpdateScene();
+  const { mutate: createToken, isPending: isCreatingToken } = useCreateToken();
+  const { setGameBroadcastContext, clearGameBroadcastContext } = useDiceRoller();
+  
+  const [newSceneName, setNewSceneName] = useState("");
+  const [newSceneBg, setNewSceneBg] = useState("");
+  
+  useEffect(() => {
+    if (myMemberRecord?.characterId || isGM) {
+      const sender = myMemberRecord?.character?.name || user?.firstName || "GM";
+      setGameBroadcastContext(game.id, sender, sendMessage);
+    }
+    return () => clearGameBroadcastContext();
+  }, [game.id, myMemberRecord, isGM, user, sendMessage, setGameBroadcastContext]);
+
+  const activeScene = scenes.find((s: any) => s.isActive) || scenes[0];
+
+  const handleCreateScene = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newSceneName.trim()) return;
+    createScene({
+      gameId: game.id,
+      name: newSceneName,
+      backgroundUrl: newSceneBg,
+      gridWidth: 20,
+      gridHeight: 20
+    });
+    setNewSceneName("");
+    setNewSceneBg("");
+  };
+
+  const handleSpawnToken = () => {
+    if (!activeScene) return;
+    createToken({
+      sceneId: activeScene.id,
+      name: "New Token",
+      x: 0,
+      y: 0,
+    }, {
+      onSuccess: (token: any) => sendMessage({ type: "tokenUpdate", payload: token })
+    });
+  };
+
+  return (
+    <div className="flex flex-col lg:flex-row gap-4 mt-4 h-full relative">
+      <div className="flex-1 flex flex-col gap-4 min-h-[500px]">
+        {/* GM Controls */}
+        {isGM && (
+          <Card className="p-3 bg-card/60 border-primary/20 flex flex-wrap gap-4 items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-primary" style={{ fontFamily: "var(--font-display)" }}>Active Scene:</span>
+              <Select 
+                value={activeScene?.id?.toString() || ""} 
+                onValueChange={(val) => {
+                  if (activeScene) updateScene({ id: activeScene.id, gameId: game.id, isActive: false });
+                  updateScene({ id: parseInt(val), gameId: game.id, isActive: true });
+                  // Broadcast scene change to push clients
+                  sendMessage({ type: "system", content: "The GM changed the map." });
+                }}
+              >
+                <SelectTrigger className="w-[200px] h-8 text-xs bg-secondary/10">
+                  <SelectValue placeholder="Select a scene..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {scenes.map((s: any) => (
+                    <SelectItem key={s.id} value={s.id.toString()}>{s.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <Button variant="outline" size="sm" className="h-8" onClick={handleSpawnToken} disabled={!activeScene || isCreatingToken}>
+                Spawn Token
+              </Button>
+              <form onSubmit={handleCreateScene} className="flex gap-2 items-center text-xs">
+                <Input className="h-8 w-32" placeholder="New Scene Name" value={newSceneName} onChange={e => setNewSceneName(e.target.value)} />
+                <Input className="h-8 w-40" placeholder="Map Image URL..." value={newSceneBg} onChange={e => setNewSceneBg(e.target.value)} />
+                <Button type="submit" size="sm" className="h-8 px-2" disabled={isCreatingScene || !newSceneName}>
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </form>
+            </div>
+          </Card>
+        )}
+
+        {/* Canvas Display */}
+        {activeScene ? (
+          <VTTCanvas 
+            scene={activeScene} 
+            gameId={game.id} 
+            lastWsMessage={lastMessage} 
+            sendMessage={sendMessage} 
+            myCharacterId={myMemberRecord?.characterId} 
+          />
+        ) : (
+          <div className="flex-1 flex items-center justify-center border border-dashed border-border/40 rounded-lg bg-card/20 min-h-[400px]">
+            <div className="text-center text-muted-foreground/50">
+              <MapIcon className="w-16 h-16 mx-auto mb-4 opacity-50" />
+              <p className="font-display text-lg">No active scene</p>
+              <p className="text-sm max-w-sm mx-auto mt-2">
+                {isGM ? "Use the controls above to create and select a map scene." : "Wait for your game master to load a map."}
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Sidebar Chat */}
+      <div className="w-full lg:w-[350px] shrink-0">
+        <ChatLog 
+          gameId={game.id} 
+          lastWsMessage={lastMessage} 
+          sendMessage={sendMessage} 
+          myCharacterName={myMemberRecord?.character?.name}
+        />
+      </div>
+    </div>
+  );
 }
 
 export default function GameDashboard() {
@@ -48,9 +180,9 @@ export default function GameDashboard() {
   const players = members?.filter(m => m.role === "player") || [];
 
   return (
-    <div className="min-h-screen p-4 md:p-8">
-      <div className="max-w-6xl mx-auto space-y-8">
-        <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-border/40 pb-6">
+    <div className="min-h-screen p-4 md:p-8 flex flex-col">
+      <div className="w-full max-w-[1600px] mx-auto flex-1 flex flex-col">
+        <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-border/40 pb-6 shrink-0">
           <div className="space-y-1">
             <Link href="/">
               <Button variant="ghost" size="sm" className="mb-2 -ml-2 text-muted-foreground">
@@ -66,177 +198,156 @@ export default function GameDashboard() {
               </span>
             </p>
           </div>
-          <div className="flex gap-2 text-sm text-muted-foreground items-center bg-card p-3 rounded-lg border border-border/50">
-            <Users className="w-5 h-5 text-primary" />
-            <span>{players.length} Players connected</span>
-          </div>
         </header>
 
-        {isGM ? (
-          <div className="space-y-6">
-            <h2 className="text-2xl text-foreground" style={{ fontFamily: "var(--font-display)" }}>Player Characters</h2>
-            {players.length === 0 ? (
-              <div className="text-center py-16 border border-dashed border-border/30 rounded-xl bg-card/20">
-                <Dices className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
-                <p className="text-lg text-muted-foreground" style={{ fontFamily: "var(--font-display)" }}>The tavern is empty.</p>
-                <p className="text-sm text-muted-foreground/60 mt-1 max-w-sm mx-auto">
-                  Send your players the invite code <strong>{game.inviteCode}</strong>. When they join and select a character, they will appear here.
-                </p>
+        {(!myMemberRecord?.characterId && !isGM) ? (
+          <div className="mt-12 bg-primary/5 border border-primary/20 rounded-xl p-6 text-center max-w-2xl mx-auto space-y-4">
+            <h2 className="text-xl text-primary" style={{ fontFamily: "var(--font-display)" }}>Join the Adventure</h2>
+            <p className="text-muted-foreground text-sm max-w-md mx-auto">
+              Select which of your characters will embark on this journey.
+            </p>
+            
+            {characters && characters.length > 0 ? (
+              <div className="max-w-xs mx-auto space-y-3">
+                <Select value={selectedCharId} onValueChange={setSelectedCharId}>
+                  <SelectTrigger className="w-full fantasy-input">
+                    <SelectValue placeholder="Select a character..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {characters.map(char => (
+                      <SelectItem key={char.id} value={char.id.toString()}>
+                        {char.name} <span className="text-muted-foreground text-xs ml-2">Lvl {char.level} {char.archetype}</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                <Button 
+                  className="w-full" 
+                  disabled={!selectedCharId || updatingMember}
+                  onClick={() => {
+                    updateMember({ gameId, characterId: parseInt(selectedCharId) }, {
+                      onSuccess: () => toast({ title: "Character Bound", description: "You are ready for adventure." }),
+                      onError: (err: any) => toast({ title: "Error", description: err.message, variant: "destructive" })
+                    });
+                  }}
+                >
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  {updatingMember ? "Binding..." : "Join Game"}
+                </Button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {players.map(p => (
-                  <Card key={p.id} className="p-4 bg-card/50 border-primary/10">
-                    <div className="flex items-start gap-4">
-                      <div className="w-10 h-10 rounded bg-primary/20 flex items-center justify-center flex-shrink-0 border border-primary/30">
-                        {p.character ? <Shield className="w-5 h-5 text-primary" /> : <Info className="w-5 h-5 text-muted-foreground" />}
-                      </div>
-                      <div>
-                        {p.character ? (
-                          <>
-                            <h3 className="text-lg text-primary font-bold" style={{ fontFamily: "var(--font-display)" }}>
-                              {p.character.name}
-                            </h3>
-                            <p className="text-xs text-muted-foreground font-mono mb-2">
-                              LVL {p.character.level} • {p.character.race} {p.character.archetype}
-                            </p>
-                            
-                            {/* GM QoL Quick Stats */}
-                            <div className="grid grid-cols-2 gap-2 mt-3 mb-4">
-                              <div className="flex items-center gap-1.5 text-xs">
-                                <Heart className="w-3.5 h-3.5 text-destructive" />
-                                <span className="text-muted-foreground whitespace-nowrap">
-                                  Wounds: <strong className="text-foreground">{p.character.woundsCurrent || 0}</strong> ({getWoundscaleThreshold(p.character.woundsCurrent || 0)})
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-1.5 text-xs">
-                                <ShieldIcon className="w-3.5 h-3.5 text-primary" />
-                                <span className="text-muted-foreground">
-                                  Evade: <strong className="text-foreground">{getEvade(p.character as any)}</strong>
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-1.5 text-xs">
-                                <EyeOff className="w-3.5 h-3.5 text-secondary" />
-                                <span className="text-muted-foreground">
-                                  Skulk: <strong className={!p.character.skulkCurrent ? "text-destructive font-bold" : "text-foreground"}>
-                                    {!p.character.skulkCurrent ? "VISIBLE" : p.character.skulkCurrent}
-                                  </strong>
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-1.5 text-xs">
-                                <Swords className="w-3.5 h-3.5 text-amber-500" />
-                                <span className="text-muted-foreground">
-                                  ATK Dice: <strong className="text-foreground">{getMaxAttackDice(p.character)}</strong>
-                                </span>
-                              </div>
-                            </div>
-                            
-                            <div className="mt-3">
-                              <Link href={`/character/${p.character.id}`}>
-                                <Button size="sm" variant="secondary" className="w-full text-xs">
-                                  View Sheet
-                                </Button>
-                              </Link>
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <h3 className="text-lg text-foreground/50 border-b border-dashed border-border/50 pb-1 w-full" style={{ fontFamily: "var(--font-display)" }}>
-                              Unknown Traveler
-                            </h3>
-                            <p className="text-xs text-muted-foreground mt-2 italic">
-                              Has not selected a character yet.
-                            </p>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </Card>
-                ))}
+              <div className="space-y-4">
+                <p className="text-sm text-destructive italic drop-shadow-sm font-bold">You must create a character before joining a game.</p>
+                <Link href="/create">
+                  <Button className="w-full max-w-xs">Create New Character</Button>
+                </Link>
               </div>
             )}
           </div>
         ) : (
-          <div className="space-y-6">
-            <div className="bg-primary/5 border border-primary/20 rounded-xl p-6 text-center max-w-2xl mx-auto space-y-4">
-              <h2 className="text-xl text-primary" style={{ fontFamily: "var(--font-display)" }}>Player Dashboard</h2>
-              {myMemberRecord?.characterId ? (
-                <div>
-                  <p className="text-muted-foreground mb-4">You have selected your hero for this campaign.</p>
-                  <Link href={`/character/${myMemberRecord.characterId}`}>
-                    <Button size="lg" className="w-full sm:w-auto font-display">Play as Character</Button>
-                  </Link>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <p className="text-muted-foreground text-sm max-w-md mx-auto">
-                    You have joined the campaign! Now select which of your characters will embark on this journey.
-                  </p>
-                  
-                  {characters && characters.length > 0 ? (
-                    <div className="max-w-xs mx-auto space-y-3">
-                      <Select value={selectedCharId} onValueChange={setSelectedCharId}>
-                        <SelectTrigger className="w-full fantasy-input">
-                          <SelectValue placeholder="Select a character..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {characters.map(char => (
-                            <SelectItem key={char.id} value={char.id.toString()}>
-                              {char.name} <span className="text-muted-foreground text-xs ml-2">Lvl {char.level} {char.archetype}</span>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      
-                      <Button 
-                        className="w-full" 
-                        disabled={!selectedCharId || updatingMember}
-                        onClick={() => {
-                          updateMember({ gameId, characterId: parseInt(selectedCharId) }, {
-                            onSuccess: () => {
-                              toast({ title: "Character Bound", description: "You are ready for adventure." });
-                            },
-                            onError: (err: any) => {
-                              toast({ title: "Failed to bind character", description: err.message, variant: "destructive" });
-                            }
-                          });
-                        }}
-                      >
-                        <UserPlus className="w-4 h-4 mr-2" />
-                        {updatingMember ? "Binding..." : "Join as Character"}
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      <p className="text-sm text-destructive italic drop-shadow-sm font-bold">You must create a character before joining a game.</p>
-                      <Link href="/create">
-                        <Button className="w-full max-w-xs">Create New Character</Button>
-                      </Link>
-                    </div>
-                  )}
-                </div>
+          <Tabs defaultValue="vtt" className="mt-6 flex-1 flex flex-col">
+            <div className="flex justify-between items-center mb-4">
+              <TabsList className="bg-card/50 border border-primary/20">
+                <TabsTrigger value="vtt" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary font-display"><MapIcon className="w-4 h-4 mr-2" /> Tabletop</TabsTrigger>
+                <TabsTrigger value="party" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary font-display"><Users className="w-4 h-4 mr-2" /> The Party</TabsTrigger>
+              </TabsList>
+              
+              {!isGM && myMemberRecord?.characterId && (
+                <Link href={`/character/${myMemberRecord.characterId}`}>
+                  <Button size="sm" variant="outline" className="font-display border-primary/30 text-primary hover:bg-primary/10">Open My Sheet</Button>
+                </Link>
               )}
             </div>
-            
-            <div className="mt-12">
-              <h3 className="text-lg text-muted-foreground mb-4" style={{ fontFamily: "var(--font-display)" }}>The Party</h3>
-              <div className="flex gap-4 overflow-x-auto pb-4">
-                {players.filter(p => p.id !== myMemberRecord?.id).map(p => (
-                   <Card key={p.id} className="min-w-[200px] p-4 bg-background">
-                     <p className="font-bold text-foreground text-center" style={{ fontFamily: "var(--font-display)" }}>
-                       {p.character?.name || "Unknown"}
-                     </p>
-                     <p className="text-xs text-muted-foreground text-center mt-1">
-                       {p.character ? `${p.character.race} ${p.character.archetype}` : "Selecting hero..."}
-                     </p>
-                   </Card>
-                ))}
-                {players.length <= 1 && (
-                  <p className="text-sm text-muted-foreground italic pl-2">You are the only member so far...</p>
-                )}
-              </div>
-            </div>
-          </div>
+
+            <TabsContent value="vtt" className="flex-1 m-0 focus-visible:outline-none">
+              <VTTTable game={game} members={members} myMemberRecord={myMemberRecord} isGM={isGM} players={players} />
+            </TabsContent>
+
+            <TabsContent value="party" className="m-0 focus-visible:outline-none space-y-6">
+              {players.length === 0 ? (
+                <div className="text-center py-16 border border-dashed border-border/30 rounded-xl bg-card/20 max-w-2xl mx-auto mt-8">
+                  <Dices className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
+                  <p className="text-lg text-muted-foreground" style={{ fontFamily: "var(--font-display)" }}>The tavern is empty.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-4">
+                  {players.map(p => (
+                    <Card key={p.id} className="p-4 bg-card/50 border-primary/10">
+                      <div className="flex flex-col gap-4">
+                        <div className="flex items-center gap-3 border-b border-border/30 pb-3">
+                          <div className="w-10 h-10 rounded bg-primary/20 flex items-center justify-center flex-shrink-0 border border-primary/30">
+                            {p.character ? <ShieldIcon className="w-5 h-5 text-primary" /> : <Info className="w-5 h-5 text-muted-foreground" />}
+                          </div>
+                          <div>
+                            <h3 className="text-lg text-primary font-bold leading-none" style={{ fontFamily: "var(--font-display)" }}>
+                              {p.character ? p.character.name : "Unknown Traveler"}
+                            </h3>
+                            {p.character && (
+                              <p className="text-xs text-muted-foreground font-mono mt-1">
+                                LVL {p.character.level} • {p.character.race} {p.character.archetype}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        {p.character ? (
+                          <div className="grid grid-cols-2 gap-y-3 gap-x-2">
+                            <div className="flex flex-col gap-1 text-xs">
+                              <span className="text-muted-foreground/70 uppercase tracking-widest text-[10px] font-bold">Wounds</span>
+                              <div className="flex items-center gap-1.5 flex-nowrap">
+                                <Heart className="w-3.5 h-3.5 text-destructive shrink-0" />
+                                <span className="truncate">
+                                  <strong className="text-foreground">{p.character.woundsCurrent || 0}</strong> <span className="text-muted-foreground text-[10px]">({getWoundscaleThreshold(p.character.woundsCurrent || 0)})</span>
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex flex-col gap-1 text-xs">
+                              <span className="text-muted-foreground/70 uppercase tracking-widest text-[10px] font-bold">Evade</span>
+                              <div className="flex items-center gap-1.5 flex-nowrap">
+                                <ShieldIcon className="w-3.5 h-3.5 text-primary shrink-0" />
+                                <span><strong className="text-foreground">{getEvade(p.character as any)}</strong></span>
+                              </div>
+                            </div>
+                            <div className="flex flex-col gap-1 text-xs">
+                              <span className="text-muted-foreground/70 uppercase tracking-widest text-[10px] font-bold">Skulk</span>
+                              <div className="flex items-center gap-1.5 flex-nowrap">
+                                <EyeOff className="w-3.5 h-3.5 text-secondary shrink-0" />
+                                <strong className={!p.character.skulkCurrent ? "text-destructive font-bold" : "text-foreground"}>
+                                  {!p.character.skulkCurrent ? "VISIBLE" : p.character.skulkCurrent}
+                                </strong>
+                              </div>
+                            </div>
+                            <div className="flex flex-col gap-1 text-xs">
+                              <span className="text-muted-foreground/70 uppercase tracking-widest text-[10px] font-bold">Max Dice</span>
+                              <div className="flex items-center gap-1.5 flex-nowrap">
+                                <Swords className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                                <strong className="text-foreground">{getMaxAttackDice(p.character)}</strong>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-xs text-muted-foreground mt-2 italic flex-1 flex items-center justify-center">
+                            Has not selected a character yet.
+                          </p>
+                        )}
+                        
+                        {isGM && p.character && (
+                          <div className="pt-3 border-t border-border/30 mt-auto">
+                            <Link href={`/character/${p.character.id}`}>
+                              <Button size="sm" variant="secondary" className="w-full text-xs">
+                                Open Sheet
+                              </Button>
+                            </Link>
+                          </div>
+                        )}
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
         )}
       </div>
     </div>

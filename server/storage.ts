@@ -39,7 +39,30 @@ export class DatabaseStorage implements IStorage {
   }
   async getCharacterForUser(id: number, userId: string) {
     const [c] = await db.select().from(characters).where(and(eq(characters.id, id), eq(characters.userId, userId)));
-    return c;
+    if (c) return c;
+    
+    // Check if the user is a GM in a game this character is bound to
+    const [char] = await db.select().from(characters).where(eq(characters.id, id));
+    if (!char) return undefined;
+    
+    // Find all games this character is part of
+    const memberships = await db.select().from(gameMembers).where(eq(gameMembers.characterId, id));
+    for (const mem of memberships) {
+      // Check if the current user is a GM of this game
+      const [gmRecord] = await db.select()
+        .from(gameMembers)
+        .where(and(
+          eq(gameMembers.gameId, mem.gameId),
+          eq(gameMembers.userId, userId),
+          eq(gameMembers.role, 'gm')
+        ));
+        
+      if (gmRecord) {
+        return char; // User is a GM, they have read access
+      }
+    }
+    
+    return undefined;
   }
   async createCharacter(data: InsertCharacter) {
     const result = await db.insert(characters).values(data).returning();

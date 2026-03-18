@@ -4,12 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useJoinGame } from "@/hooks/use-games";
+import { useToast } from "@/hooks/use-toast";
 import { Users } from "lucide-react";
 
 export function JoinGameDialog() {
   const [open, setOpen] = useState(false);
   const [code, setCode] = useState("");
   const { mutate, isPending } = useJoinGame();
+  const { toast } = useToast();
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,6 +20,10 @@ export function JoinGameDialog() {
       onSuccess: () => {
         setOpen(false);
         setCode("");
+        toast({ title: "Joined Campaign", description: "You have joined the party!" });
+      },
+      onError: (err: any) => {
+        toast({ title: "Failed to join campaign", description: err.message, variant: "destructive" });
       }
     });
   };

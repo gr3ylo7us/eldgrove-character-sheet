@@ -4,12 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCreateGame } from "@/hooks/use-games";
+import { useToast } from "@/hooks/use-toast";
 import { Plus } from "lucide-react";
 
 export function CreateGameDialog() {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const { mutate, isPending } = useCreateGame();
+  const { toast } = useToast();
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,6 +20,10 @@ export function CreateGameDialog() {
       onSuccess: () => {
         setOpen(false);
         setName("");
+        toast({ title: "Campaign Created", description: "Your new campaign awaits!" });
+      },
+      onError: (err: any) => {
+        toast({ title: "Failed to create campaign", description: err.message, variant: "destructive" });
       }
     });
   };

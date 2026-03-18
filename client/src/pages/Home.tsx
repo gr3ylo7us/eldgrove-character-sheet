@@ -1,18 +1,22 @@
 import { useCharacters, useDeleteCharacter } from "@/hooks/use-characters";
 import { useAuth } from "@/hooks/use-auth";
 import { Link } from "wouter";
-import { Scroll, Plus, Trash2, Shield, Swords, LogOut } from "lucide-react";
+import { Scroll, Plus, Trash2, Shield, Swords, LogOut, Castle, Handshake } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { STAT_LABELS, getWoundscaleThreshold } from "@/lib/formulas";
+import { useGames } from "@/hooks/use-games";
+import { CreateGameDialog } from "@/components/CreateGameDialog";
+import { JoinGameDialog } from "@/components/JoinGameDialog";
 
 export default function Home() {
   const { data: characters, isLoading } = useCharacters();
+  const { data: games, isLoading: isLoadingGames } = useGames();
   const deleteMut = useDeleteCharacter();
   const { user } = useAuth();
 
-  if (isLoading) {
+  if (isLoading || isLoadingGames) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center space-y-4 animate-pulse">
@@ -22,6 +26,8 @@ export default function Home() {
       </div>
     );
   }
+
+  const isGM = user?.accessTier === "gm" || user?.accessTier === "admin";
 
   const displayName = [user?.firstName, user?.lastName].filter(Boolean).join(" ") || user?.email || "Traveler";
   const initials = displayName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
@@ -114,6 +120,57 @@ export default function Home() {
             <p className="text-sm text-muted-foreground/60 mt-1">Create a new character to begin.</p>
           </div>
         )}
+
+        <div className="pt-8 border-t border-border/20">
+          <div className="flex justify-between items-end mb-6">
+            <div>
+              <h2 className="text-2xl text-primary flex items-center gap-2" style={{ fontFamily: "var(--font-display)" }}>
+                <Castle className="w-6 h-6" /> Campaigns
+              </h2>
+              <p className="text-sm text-muted-foreground italic">Games you are mastering or traversing.</p>
+            </div>
+            <div className="flex gap-2">
+              <JoinGameDialog />
+              {isGM && <CreateGameDialog />}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {games?.map(({ game, role }) => (
+              <Card key={game.id} className="relative group p-5 hover-elevate border-primary/20 bg-card/50">
+                <Link href={`/game/${game.id}`} className="block space-y-3">
+                  <div className="flex justify-between items-start gap-2 border-b border-border/50 pb-2">
+                    <div>
+                      <h3 className="text-xl text-foreground font-bold" style={{ fontFamily: "var(--font-display)" }}>{game.name}</h3>
+                      <p className="text-xs text-muted-foreground font-mono mt-1">CODE: {game.inviteCode}</p>
+                    </div>
+                    {role === "gm" ? (
+                      <span className="text-[10px] uppercase font-bold bg-primary/20 text-primary px-2 py-1 rounded border border-primary/30 flex items-center gap-1">
+                        <Castle className="w-3 h-3" /> GM
+                      </span>
+                    ) : (
+                      <span className="text-[10px] uppercase font-bold bg-secondary/80 text-secondary-foreground px-2 py-1 rounded flex items-center gap-1">
+                        <Handshake className="w-3 h-3" /> Player
+                      </span>
+                    )}
+                  </div>
+                  <div className="pt-2">
+                    <p className="text-xs text-muted-foreground line-clamp-2 italic">
+                      "Gather your party and venture forth..."
+                    </p>
+                  </div>
+                </Link>
+              </Card>
+            ))}
+          </div>
+
+          {games?.length === 0 && (
+            <div className="text-center py-12 border border-dashed border-border/20 rounded-md bg-secondary/5 mt-4">
+              <p className="text-muted-foreground font-display text-lg">No active campaigns.</p>
+              <p className="text-sm text-muted-foreground/60 mt-1">Join a party with an invite code or start your own.</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

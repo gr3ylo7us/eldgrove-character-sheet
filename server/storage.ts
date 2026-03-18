@@ -1,7 +1,8 @@
 import {
-  characters, weapons, armor, items, skills, archetypes, feats, maneuvers, languages, levelingTable,
+  characters, weapons, armor, items, skills, archetypes, feats, maneuvers, languages, levelingTable, games, gameMembers,
   type Character, type InsertCharacter, type Weapon, type Armor, type Item,
-  type Skill, type Archetype, type Feat, type Maneuver, type Language, type LevelingEntry
+  type Skill, type Archetype, type Feat, type Maneuver, type Language, type LevelingEntry,
+  type Game, type InsertGame, type GameMember, type InsertGameMember
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and } from "drizzle-orm";
@@ -21,6 +22,15 @@ export interface IStorage {
   getManeuvers(): Promise<Maneuver[]>;
   getLanguages(): Promise<Language[]>;
   getLeveling(): Promise<LevelingEntry[]>;
+  
+  // Games
+  createGame(game: InsertGame): Promise<Game>;
+  getGameByInviteCode(code: string): Promise<Game | undefined>;
+  getGamesForUser(userId: string): Promise<{ game: Game; role: string }[]>;
+  getGame(id: number): Promise<Game | undefined>;
+  joinGame(member: InsertGameMember): Promise<GameMember>;
+  getGameMembers(gameId: number): Promise<(GameMember & { character?: Character | null })[]>;
+  updateGameMemberCharacter(gameId: number, userId: string, characterId: number | null): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -55,6 +65,47 @@ export class DatabaseStorage implements IStorage {
   async getManeuvers() { return db.select().from(maneuvers); }
   async getLanguages() { return db.select().from(languages); }
   async getLeveling() { return db.select().from(levelingTable); }
+
+  // Games
+  async createGame(data: InsertGame) {
+    const result = await db.insert(games).values(data).returning();
+    return result[0];
+  }
+  async getGameByInviteCode(code: string) {
+    const [g] = await db.select().from(games).where(eq(games.inviteCode, code));
+    return g;
+  }
+  async getGame(id: number) {
+    const [g] = await db.select().from(games).where(eq(games.id, id));
+    return g;
+  }
+  async getGamesForUser(userId: string) {
+    const memberRecords = await db.select().from(gameMembers).where(eq(gameMembers.userId, userId));
+    const result: { game: Game; role: string }[] = [];
+    for (const mem of memberRecords) {
+      const parentGame = await this.getGame(mem.gameId);
+      if (parentGame) result.push({ game: parentGame, role: mem.role });
+    }
+    return result;
+  }
+  async joinGame(data: InsertGameMember) {
+    const result = await db.insert(gameMembers).values(data).returning();
+    return result[0];
+  }
+  async getGameMembers(gameId: number) {
+    const members = await db.select().from(gameMembers).where(eq(gameMembers.gameId, gameId));
+    // Fetch related characters manually for SQLite compatibility
+    const withChars = [];
+    for (const m of members) {
+      let char = null;
+      if (m.characterId) char = await this.getCharacterForUser(m.characterId, m.userId);
+      withChars.push({ ...m, character: char });
+    }
+    return withChars;
+  }
+  async updateGameMemberCharacter(gameId: number, userId: string, characterId: number | null) {
+    await db.update(gameMembers).set({ characterId }).where(and(eq(gameMembers.gameId, gameId), eq(gameMembers.userId, userId)));
+  }
 }
 
 export const storage = new DatabaseStorage();

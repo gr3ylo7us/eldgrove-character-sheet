@@ -14,6 +14,14 @@ export const api = {
     update: { method: 'PUT' as const, path: '/api/characters/:id' as const, input: insertCharacterSchema.partial(), responses: { 200: z.any() } },
     delete: { method: 'DELETE' as const, path: '/api/characters/:id' as const, responses: { 204: z.void() } },
   },
+  games: {
+    list: { method: 'GET' as const, path: '/api/games' as const, responses: { 200: z.any() } },
+    create: { method: 'POST' as const, path: '/api/games' as const, input: z.object({ name: z.string() }), responses: { 201: z.any() } },
+    get: { method: 'GET' as const, path: '/api/games/:id' as const, responses: { 200: z.any(), 404: errorSchemas.notFound } },
+    join: { method: 'POST' as const, path: '/api/games/join' as const, input: z.object({ inviteCode: z.string() }), responses: { 200: z.any(), 404: errorSchemas.notFound } },
+    getMembers: { method: 'GET' as const, path: '/api/games/:id/members' as const, responses: { 200: z.any() } },
+    updateMember: { method: 'PUT' as const, path: '/api/games/:id/members/me' as const, input: z.object({ characterId: z.number().nullable() }), responses: { 200: z.any() } },
+  },
   data: {
     weapons: { method: 'GET' as const, path: '/api/data/weapons' as const, responses: { 200: z.any() } },
     armor: { method: 'GET' as const, path: '/api/data/armor' as const, responses: { 200: z.any() } },

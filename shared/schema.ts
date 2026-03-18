@@ -47,6 +47,23 @@ export const characters = sqliteTable("characters", {
   notes: text("notes").default(""),
 });
 
+export const games = sqliteTable("games", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  inviteCode: text("invite_code").notNull().unique(),
+  ownerId: text("owner_id").notNull(), // User logic references generic string user IDs
+  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+});
+
+export const gameMembers = sqliteTable("game_members", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  gameId: integer("game_id").notNull(),
+  userId: text("user_id").notNull(),
+  role: text("role").notNull().default("player"), // 'gm' or 'player'
+  characterId: integer("character_id"), // Optional: The character sheet this player is using in the game
+  joinedAt: integer("joined_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+});
+
 export const weapons = sqliteTable("weapons", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
@@ -143,6 +160,8 @@ export const insertFeatSchema = createInsertSchema(feats).omit({ id: true });
 export const insertManeuverSchema = createInsertSchema(maneuvers).omit({ id: true });
 export const insertLanguageSchema = createInsertSchema(languages).omit({ id: true });
 export const insertLevelingSchema = createInsertSchema(levelingTable).omit({ id: true });
+export const insertGameSchema = createInsertSchema(games).omit({ id: true, createdAt: true });
+export const insertGameMemberSchema = createInsertSchema(gameMembers).omit({ id: true, joinedAt: true });
 
 export type Character = typeof characters.$inferSelect;
 export type InsertCharacter = z.infer<typeof insertCharacterSchema>;
@@ -155,3 +174,7 @@ export type Feat = typeof feats.$inferSelect;
 export type Maneuver = typeof maneuvers.$inferSelect;
 export type Language = typeof languages.$inferSelect;
 export type LevelingEntry = typeof levelingTable.$inferSelect;
+export type Game = typeof games.$inferSelect;
+export type InsertGame = z.infer<typeof insertGameSchema>;
+export type GameMember = typeof gameMembers.$inferSelect;
+export type InsertGameMember = z.infer<typeof insertGameMemberSchema>;

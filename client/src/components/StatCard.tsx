@@ -1,5 +1,4 @@
 import { motion } from "framer-motion";
-import { type Stat } from "@shared/schema";
 import { Minus, Plus } from "lucide-react";
 
 interface StatCardProps {

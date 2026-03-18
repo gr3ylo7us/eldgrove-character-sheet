@@ -16,6 +16,7 @@ import Datacard from "@/pages/Datacard";
 import Compendium from "@/pages/Compendium";
 import AccessGate from "@/pages/AccessGate";
 import Admin from "@/pages/Admin";
+import GameDashboard from "@/pages/GameDashboard";
 import { CompendiumDrawer } from "@/components/CompendiumDrawer";
 import { DiceRollerProvider, useDiceRoller } from "@/components/DiceRoller";
 
@@ -68,6 +69,7 @@ function AuthRouter() {
       <Route path="/datacard/:id" component={Datacard} />
       <Route path="/compendium" component={Compendium} />
       <Route path="/admin" component={Admin} />
+      <Route path="/game/:id" component={GameDashboard} />
       <Route component={NotFound} />
     </Switch>
   );

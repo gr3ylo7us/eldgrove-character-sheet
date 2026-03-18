@@ -9,14 +9,6 @@ import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { Sword } from "lucide-react";
 
-const defaultStats = {
-  strength: 10,
-  dexterity: 10,
-  constitution: 10,
-  intelligence: 10,
-  wisdom: 10,
-  charisma: 10
-};
 
 export function CreateCharDialog() {
   const [open, setOpen] = useState(false);
@@ -27,15 +19,10 @@ export function CreateCharDialog() {
     defaultValues: {
       name: "",
       race: "",
-      class: "",
+      archetype: "",
       level: 1,
-      stats: defaultStats,
-      skills: [],
-      equipment: [],
-      abilities: [],
       notes: "",
-      isNpc: false,
-    }
+    } as any
   });
 
   const onSubmit = (data: InsertCharacter) => {
@@ -72,8 +59,8 @@ export function CreateCharDialog() {
                 <Input {...form.register("race")} className="fantasy-input" placeholder="Human" />
               </div>
               <div className="space-y-2">
-                <Label className="font-display text-muted-foreground">Class</Label>
-                <Input {...form.register("class")} className="fantasy-input" placeholder="Ranger" />
+                <Label className="font-display text-muted-foreground">Archetype</Label>
+                <Input {...form.register("archetype")} className="fantasy-input" placeholder="Ranger" />
               </div>
             </div>
 

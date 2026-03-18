@@ -1,17 +1,25 @@
 import { useRoute } from "wouter";
-import { useGame, useGameMembers } from "@/hooks/use-games";
+import { useGame, useGameMembers, useUpdateGameMember } from "@/hooks/use-games";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Castle, Users, Info, ArrowLeft, Dices, Shield } from "lucide-react";
+import { Castle, Users, Info, ArrowLeft, Dices, Shield, UserPlus } from "lucide-react";
 import { Link } from "wouter";
+import { useCharacters } from "@/hooks/use-characters";
+import { useToast } from "@/hooks/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useState } from "react";
 
 export default function GameDashboard() {
   const [, params] = useRoute("/game/:id");
   const gameId = parseInt(params?.id || "0");
   const { data: game, isLoading: gameLoading } = useGame(gameId);
   const { data: members, isLoading: membersLoading } = useGameMembers(gameId);
+  const { data: characters } = useCharacters();
+  const { mutate: updateMember, isPending: updatingMember } = useUpdateGameMember();
+  const { toast } = useToast();
   const { user } = useAuth();
+  const [selectedCharId, setSelectedCharId] = useState<string>("");
   
   if (gameLoading || membersLoading) {
     return (
@@ -119,13 +127,52 @@ export default function GameDashboard() {
                   </Link>
                 </div>
               ) : (
-                <div>
-                  <p className="text-muted-foreground mb-4 text-sm max-w-md mx-auto">
-                    You have joined the campaign, but you need to select a character to play. Return to the dashboard and select a character sheet to bind to this game.
+                <div className="space-y-4">
+                  <p className="text-muted-foreground text-sm max-w-md mx-auto">
+                    You have joined the campaign! Now select which of your characters will embark on this journey.
                   </p>
-                  <Link href="/">
-                    <Button variant="outline">Back to Characters</Button>
-                  </Link>
+                  
+                  {characters && characters.length > 0 ? (
+                    <div className="max-w-xs mx-auto space-y-3">
+                      <Select value={selectedCharId} onValueChange={setSelectedCharId}>
+                        <SelectTrigger className="w-full fantasy-input">
+                          <SelectValue placeholder="Select a character..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {characters.map(char => (
+                            <SelectItem key={char.id} value={char.id.toString()}>
+                              {char.name} <span className="text-muted-foreground text-xs ml-2">Lvl {char.level} {char.archetype}</span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      
+                      <Button 
+                        className="w-full" 
+                        disabled={!selectedCharId || updatingMember}
+                        onClick={() => {
+                          updateMember({ gameId, characterId: parseInt(selectedCharId) }, {
+                            onSuccess: () => {
+                              toast({ title: "Character Bound", description: "You are ready for adventure." });
+                            },
+                            onError: (err: any) => {
+                              toast({ title: "Failed to bind character", description: err.message, variant: "destructive" });
+                            }
+                          });
+                        }}
+                      >
+                        <UserPlus className="w-4 h-4 mr-2" />
+                        {updatingMember ? "Binding..." : "Join as Character"}
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <p className="text-sm text-destructive italic drop-shadow-sm font-bold">You must create a character before joining a game.</p>
+                      <Link href="/create">
+                        <Button className="w-full max-w-xs">Create New Character</Button>
+                      </Link>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

@@ -9,6 +9,16 @@ import { useCharacters } from "@/hooks/use-characters";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
+import { getEvade, getWoundscaleThreshold, getWeaponAttack } from "@/lib/formulas";
+import { Badge } from "@/components/ui/badge";
+import { Swords, Heart, Shield as ShieldIcon, EyeOff } from "lucide-react";
+
+// Helper to calculate max attack dice based on equipped weapons
+function getMaxAttackDice(char: any) {
+  const weapons = Array.isArray(char.equippedWeapons) ? char.equippedWeapons : [];
+  if (weapons.length === 0) return 0;
+  return Math.max(...weapons.map((w: any) => getWeaponAttack(char, w)));
+}
 
 export default function GameDashboard() {
   const [, params] = useRoute("/game/:id");
@@ -87,9 +97,40 @@ export default function GameDashboard() {
                             <h3 className="text-lg text-primary font-bold" style={{ fontFamily: "var(--font-display)" }}>
                               {p.character.name}
                             </h3>
-                            <p className="text-xs text-muted-foreground font-mono">
+                            <p className="text-xs text-muted-foreground font-mono mb-2">
                               LVL {p.character.level} • {p.character.race} {p.character.archetype}
                             </p>
+                            
+                            {/* GM QoL Quick Stats */}
+                            <div className="grid grid-cols-2 gap-2 mt-3 mb-4">
+                              <div className="flex items-center gap-1.5 text-xs">
+                                <Heart className="w-3.5 h-3.5 text-destructive" />
+                                <span className="text-muted-foreground whitespace-nowrap">
+                                  Wounds: <strong className="text-foreground">{p.character.woundsCurrent || 0}</strong> ({getWoundscaleThreshold(p.character.woundsCurrent || 0)})
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1.5 text-xs">
+                                <ShieldIcon className="w-3.5 h-3.5 text-primary" />
+                                <span className="text-muted-foreground">
+                                  Evade: <strong className="text-foreground">{getEvade(p.character as any)}</strong>
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1.5 text-xs">
+                                <EyeOff className="w-3.5 h-3.5 text-secondary" />
+                                <span className="text-muted-foreground">
+                                  Skulk: <strong className={!p.character.skulkCurrent ? "text-destructive font-bold" : "text-foreground"}>
+                                    {!p.character.skulkCurrent ? "VISIBLE" : p.character.skulkCurrent}
+                                  </strong>
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1.5 text-xs">
+                                <Swords className="w-3.5 h-3.5 text-amber-500" />
+                                <span className="text-muted-foreground">
+                                  ATK Dice: <strong className="text-foreground">{getMaxAttackDice(p.character)}</strong>
+                                </span>
+                              </div>
+                            </div>
+                            
                             <div className="mt-3">
                               <Link href={`/character/${p.character.id}`}>
                                 <Button size="sm" variant="secondary" className="w-full text-xs">

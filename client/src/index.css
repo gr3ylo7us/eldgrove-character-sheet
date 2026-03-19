@@ -17,16 +17,16 @@ input[type="number"] {
   --font-display: 'Cinzel', serif;
   --font-body: 'Crimson Text', serif;
 
-  --background: 160 15% 8%;
-  --foreground: 150 10% 90%;
+  --background: 160 15% 8%; /* Dark Emerald Backdrop */
+  --foreground: 0 0% 90%;
 
-  --card: 160 14% 11%;
-  --card-foreground: 150 10% 90%;
-  --card-border: 150 20% 18%;
+  --card: 0 0% 11%; /* Neutral Dark Grey Elements */
+  --card-foreground: 0 0% 90%;
+  --card-border: 0 0% 18%;
 
-  --popover: 160 14% 11%;
-  --popover-foreground: 150 10% 90%;
-  --popover-border: 150 20% 18%;
+  --popover: 0 0% 11%;
+  --popover-foreground: 0 0% 90%;
+  --popover-border: 0 0% 18%;
 
   --primary: 45 80% 55%; /* Gold Accent */
   --primary-foreground: 160 40% 5%;
@@ -34,8 +34,8 @@ input[type="number"] {
   --secondary: 150 40% 18%; /* Emerald-tinted secondary backgrounds */
   --secondary-foreground: 150 10% 85%; /* Silver text */
 
-  --muted: 150 20% 14%;
-  --muted-foreground: 150 10% 65%;
+  --muted: 0 0% 14%; /* Neutral Dark Muted Backgrounds */
+  --muted-foreground: 0 0% 65%;
 
   --accent: 150 70% 35%; /* Bright Emerald Accent */
   --accent-foreground: 0 0% 98%;
@@ -43,13 +43,13 @@ input[type="number"] {
   --destructive: 0 60% 40%;
   --destructive-foreground: 0 0% 100%;
 
-  --border: 150 20% 18%; /* Emerald tinted borders */
-  --input: 160 15% 12%;
+  --border: 0 0% 18%; /* Neutral Borders */
+  --input: 0 0% 12%; /* Neutral Inputs */
   --ring: 150 70% 35%; /* Emerald focus ring */
 
-  --sidebar: 160 15% 7%;
-  --sidebar-foreground: 150 10% 90%;
-  --sidebar-border: 150 20% 15%;
+  --sidebar: 0 0% 7%; /* Neutral nearly pitch-black Sidebar */
+  --sidebar-foreground: 0 0% 90%;
+  --sidebar-border: 0 0% 15%;
   --sidebar-primary: 45 80% 55%;
   --sidebar-primary-foreground: 160 40% 5%;
   --sidebar-accent: 150 40% 18%;

@@ -34,7 +34,7 @@ export function useScenes(gameId: number) {
 export function useCreateScene() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (vars: { gameId: number; name: string; backgroundUrl?: string; gridWidth?: number; gridHeight?: number }) => {
+    mutationFn: async (vars: { gameId: number; name: string; backgroundUrl?: string; atmosphereUrl?: string; gridWidth?: number; gridHeight?: number }) => {
       const res = await fetch(`/api/games/${vars.gameId}/scenes`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -50,7 +50,7 @@ export function useCreateScene() {
 export function useUpdateScene() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (vars: { id: number; gameId: number; name?: string; backgroundUrl?: string; isActive?: boolean }) => {
+    mutationFn: async (vars: { id: number; gameId: number; name?: string; backgroundUrl?: string; atmosphereUrl?: string; isActive?: boolean }) => {
       const res = await fetch(`/api/scenes/${vars.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -89,7 +89,7 @@ export function useCreateToken() {
 export function useUpdateToken() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (vars: { id: number; sceneId: number; x?: number; y?: number }) => {
+    mutationFn: async (vars: { id: number; sceneId: number; name?: string; imageUrl?: string | null; characterId?: number | null; x?: number | null; y?: number | null; size?: number | null }) => {
       const res = await fetch(`/api/tokens/${vars.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -97,6 +97,18 @@ export function useUpdateToken() {
       });
       if (!res.ok) throw new Error(await res.text());
       return res.json();
+    },
+    onSuccess: (_, vars) => queryClient.invalidateQueries({ queryKey: ["/api/scenes", vars.sceneId, "tokens"] }),
+  });
+}
+
+export function useDeleteToken() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (vars: { id: number; sceneId: number }) => {
+      const res = await fetch(`/api/tokens/${vars.id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error(await res.text());
+      return res; // no json parsing for 204
     },
     onSuccess: (_, vars) => queryClient.invalidateQueries({ queryKey: ["/api/scenes", vars.sceneId, "tokens"] }),
   });

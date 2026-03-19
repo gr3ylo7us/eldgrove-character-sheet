@@ -195,6 +195,7 @@ await client.executeMultiple(`
     game_id INTEGER NOT NULL,
     name TEXT NOT NULL,
     background_url TEXT,
+    atmosphere_url TEXT,
     grid_width INTEGER DEFAULT 20,
     grid_height INTEGER DEFAULT 20,
     is_active INTEGER DEFAULT 0,

@@ -69,6 +69,7 @@ export const scenes = sqliteTable("scenes", {
   gameId: integer("game_id").notNull(),
   name: text("name").notNull(),
   backgroundUrl: text("background_url"),
+  atmosphereUrl: text("atmosphere_url"),
   gridWidth: integer("grid_width").default(20),
   gridHeight: integer("grid_height").default(20),
   isActive: integer("is_active", { mode: "boolean" }).default(false),

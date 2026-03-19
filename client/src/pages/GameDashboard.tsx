@@ -26,7 +26,7 @@ function getMaxAttackDice(char: any) {
   return Math.max(...weapons.map((w: any) => getWeaponAttack(char, w)));
 }
 
-function VTTTable({ game, myMemberRecord, isGM }: any) {
+function VTTTable({ game, myMemberRecord, isGM, players }: any) {
   const { user } = useAuth();
   const { lastMessage, sendMessage, isConnected } = useVTTWebSocket(game.id, myMemberRecord?.characterId);
   const { data: scenes = [] } = useScenes(game.id);
@@ -37,6 +37,7 @@ function VTTTable({ game, myMemberRecord, isGM }: any) {
   
   const [newSceneName, setNewSceneName] = useState("");
   const [newSceneBg, setNewSceneBg] = useState("");
+  const [newSceneAtmo, setNewSceneAtmo] = useState("");
   
   useEffect(() => {
     if (myMemberRecord?.characterId || isGM) {
@@ -55,11 +56,13 @@ function VTTTable({ game, myMemberRecord, isGM }: any) {
       gameId: game.id,
       name: newSceneName,
       backgroundUrl: newSceneBg,
+      atmosphereUrl: newSceneAtmo,
       gridWidth: 20,
       gridHeight: 20
     });
     setNewSceneName("");
     setNewSceneBg("");
+    setNewSceneAtmo("");
   };
 
   const handleSpawnToken = () => {
@@ -109,6 +112,7 @@ function VTTTable({ game, myMemberRecord, isGM }: any) {
               <form onSubmit={handleCreateScene} className="flex gap-2 items-center text-xs">
                 <Input className="h-8 w-32" placeholder="New Scene Name" value={newSceneName} onChange={e => setNewSceneName(e.target.value)} />
                 <Input className="h-8 w-40" placeholder="Map Image URL..." value={newSceneBg} onChange={e => setNewSceneBg(e.target.value)} />
+                <Input className="h-8 w-40 hidden md:block" placeholder="Atmosphere URL..." value={newSceneAtmo} onChange={e => setNewSceneAtmo(e.target.value)} />
                 <Button type="submit" size="sm" className="h-8 px-2" disabled={isCreatingScene || !newSceneName}>
                   <Plus className="w-4 h-4" />
                 </Button>
@@ -125,6 +129,8 @@ function VTTTable({ game, myMemberRecord, isGM }: any) {
             lastWsMessage={lastMessage} 
             sendMessage={sendMessage} 
             myCharacterId={myMemberRecord?.characterId} 
+            isGM={isGM}
+            players={players}
           />
         ) : (
           <div className="flex-1 flex items-center justify-center border border-dashed border-border/40 rounded-lg bg-card/20 min-h-[400px]">

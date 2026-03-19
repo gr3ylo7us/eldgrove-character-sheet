@@ -17,24 +17,24 @@ input[type="number"] {
   --font-display: 'Cinzel', serif;
   --font-body: 'Crimson Text', serif;
 
-  --background: 160 30% 6%;
+  --background: 160 20% 2%;
   --foreground: 0 0% 96%;
 
-  --card: 160 25% 8%;
+  --card: 160 20% 4%;
   --card-foreground: 0 0% 96%;
-  --card-border: 160 20% 14%;
+  --card-border: 160 20% 8%;
 
-  --popover: 160 25% 8%;
+  --popover: 160 20% 4%;
   --popover-foreground: 0 0% 96%;
-  --popover-border: 160 20% 14%;
+  --popover-border: 160 20% 8%;
 
   --primary: 45 85% 55%; /* Gold Accent */
   --primary-foreground: 160 40% 5%;
 
-  --secondary: 160 15% 16%; /* Dark metallic teal background for secondary panels */
+  --secondary: 160 15% 10%; /* Dark metallic teal background for secondary panels */
   --secondary-foreground: 200 15% 85%; /* Silver text */
 
-  --muted: 160 15% 12%;
+  --muted: 160 15% 7%;
   --muted-foreground: 160 10% 60%;
 
   --accent: 150 70% 35%; /* Emerald Accent */
@@ -43,13 +43,13 @@ input[type="number"] {
   --destructive: 0 60% 40%;
   --destructive-foreground: 0 0% 100%;
 
-  --border: 160 20% 14%;
-  --input: 160 20% 12%;
+  --border: 160 20% 8%;
+  --input: 160 20% 7%;
   --ring: 45 85% 55%; /* Gold */
 
-  --sidebar: 160 35% 4%;
+  --sidebar: 160 25% 1%;
   --sidebar-foreground: 0 0% 96%;
-  --sidebar-border: 160 20% 14%;
+  --sidebar-border: 160 20% 8%;
   --sidebar-primary: 45 85% 55%;
   --sidebar-primary-foreground: 160 40% 5%;
   --sidebar-accent: 150 70% 35%;

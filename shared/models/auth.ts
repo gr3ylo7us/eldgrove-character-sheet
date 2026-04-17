@@ -28,6 +28,7 @@ export const users = sqliteTable("users", {
 export const accessKeys = sqliteTable("access_keys", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   key: text("key").notNull().unique(),
+  type: text("type").notNull().default("beta"), // 'beta' or 'gm'
   createdAt: integer("created_at", { mode: "timestamp" }),
   redeemedBy: text("redeemed_by"),
   redeemedAt: integer("redeemed_at", { mode: "timestamp" }),

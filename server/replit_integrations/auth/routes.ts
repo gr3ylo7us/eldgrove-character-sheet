@@ -57,9 +57,10 @@ export function registerAuthRoutes(app: Express): void {
   });
 
   // Admin: Generate access key
-  app.post("/api/admin/keys/generate", isAdmin, async (_req, res) => {
+  app.post("/api/admin/keys/generate", isAdmin, async (req, res) => {
     try {
-      const key = await authStorage.generateAccessKey();
+      const type = req.body?.type || "beta";
+      const key = await authStorage.generateAccessKey(type);
       res.json(key);
     } catch (error) {
       console.error("Error generating key:", error);

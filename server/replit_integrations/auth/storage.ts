@@ -9,7 +9,7 @@ export interface IAuthStorage {
   upsertUser(user: UpsertUser): Promise<User>;
   updateUserTier(userId: string, tier: string, extra?: Partial<UpsertUser>): Promise<User | undefined>;
   // Access key operations
-  generateAccessKey(): Promise<AccessKey>;
+  generateAccessKey(type?: string): Promise<AccessKey>;
   listAccessKeys(): Promise<AccessKey[]>;
   redeemAccessKey(key: string, userId: string): Promise<{ success: boolean; message: string }>;
 }
@@ -55,7 +55,7 @@ class AuthStorage implements IAuthStorage {
     return this.getUser(userId);
   }
 
-  async generateAccessKey(): Promise<AccessKey> {
+  async generateAccessKey(type: string = "beta"): Promise<AccessKey> {
     // Generate a readable key like "ELDG-XXXX-XXXX-XXXX"
     const segments = Array.from({ length: 3 }, () =>
       crypto.randomBytes(2).toString("hex").toUpperCase()
@@ -64,7 +64,7 @@ class AuthStorage implements IAuthStorage {
 
     const result = await db
       .insert(accessKeys)
-      .values({ key, createdAt: new Date() })
+      .values({ key, type, createdAt: new Date() })
       .returning();
     return result[0];
   }
@@ -88,10 +88,12 @@ class AuthStorage implements IAuthStorage {
       .set({ redeemedBy: userId, redeemedAt: new Date() })
       .where(eq(accessKeys.key, key.toUpperCase().trim()));
 
-    // Upgrade user to beta (full access)
-    await this.updateUserTier(userId, "beta", { accessKeyUsed: key });
+    // Upgrade user to beta or gm based on key type
+    const newTier = found.type === "gm" ? "gm" : "beta";
+    await this.updateUserTier(userId, newTier, { accessKeyUsed: key });
 
-    return { success: true, message: "Access key redeemed! You now have full access." };
+    const roleName = newTier === "gm" ? "Game Master" : "Player Beta";
+    return { success: true, message: `Access key redeemed! You now have ${roleName} access.` };
   }
 }
 

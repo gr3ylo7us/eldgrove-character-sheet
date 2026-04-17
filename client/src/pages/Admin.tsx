@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 interface AccessKey {
     id: number;
     key: string;
+    type: string;
     createdAt: string;
     redeemedBy: string | null;
     redeemedAt: string | null;
@@ -45,6 +46,7 @@ export default function Admin() {
     const [isGenerating, setIsGenerating] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [copiedKey, setCopiedKey] = useState<string | null>(null);
+    const [keyType, setKeyType] = useState<"beta" | "gm">("beta");
 
     // Game data state
     const [isReseeding, setIsReseeding] = useState(false);
@@ -91,6 +93,8 @@ export default function Admin() {
             const res = await fetch("/api/admin/keys/generate", {
                 method: "POST",
                 credentials: "include",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ type: keyType }),
             });
             if (res.ok) {
                 const data = await res.json();
@@ -383,10 +387,20 @@ export default function Admin() {
                                 Create a key to give to a beta tester. Each key works once.
                             </p>
                         </div>
-                        <Button onClick={generateKey} disabled={isGenerating}>
-                            <Key className="w-4 h-4 mr-1" />
-                            {isGenerating ? "Generating..." : "Generate Key"}
-                        </Button>
+                        <div className="flex items-center gap-2">
+                           <select 
+                               value={keyType}
+                               onChange={(e) => setKeyType(e.target.value as "beta" | "gm")}
+                               className="bg-background border border-border rounded-md px-3 py-1.5 text-sm"
+                           >
+                               <option value="beta">Player Beta</option>
+                               <option value="gm">GM Beta</option>
+                           </select>
+                           <Button onClick={generateKey} disabled={isGenerating}>
+                               <Key className="w-4 h-4 mr-1" />
+                               {isGenerating ? "Generating..." : "Generate Key"}
+                           </Button>
+                        </div>
                     </div>
                 </Card>
 
@@ -405,7 +419,10 @@ export default function Admin() {
                                             key={k.id}
                                             className="flex items-center justify-between p-3 bg-muted/30 rounded-md"
                                         >
-                                            <code className="font-mono tracking-wider text-sm">{k.key}</code>
+                                            <div className="flex items-center gap-2">
+                                                <code className="font-mono tracking-wider text-sm">{k.key}</code>
+                                                <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded-full uppercase font-bold tracking-wider">{k.type === "gm" ? "GM" : "Player"}</span>
+                                            </div>
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
@@ -434,10 +451,11 @@ export default function Admin() {
                                             key={k.id}
                                             className="flex items-center justify-between p-3 bg-muted/20 rounded-md opacity-60"
                                         >
-                                            <div>
+                                            <div className="flex items-center gap-2">
                                                 <code className="font-mono tracking-wider text-sm line-through">
                                                     {k.key}
                                                 </code>
+                                                <span className="text-[10px] opacity-70 bg-primary/10 text-primary px-2 py-0.5 rounded-full uppercase font-bold tracking-wider">{k.type === "gm" ? "GM" : "Player"}</span>
                                                 <span className="text-xs text-muted-foreground ml-2">
                                                     used by {k.redeemedBy}
                                                 </span>

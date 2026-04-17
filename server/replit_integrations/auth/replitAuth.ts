@@ -196,6 +196,9 @@ export const isAdmin: RequestHandler = async (req: any, res, next) => {
     return res.status(401).json({ message: "Unauthorized" });
   }
   const user = await authStorage.getUser(req.session.userId);
+  if (user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase())) {
+    return next();
+  }
   if (!user || (user.accessTier !== "admin" && !ADMIN_USER_IDS.includes(user.id))) {
     return res.status(403).json({ message: "Admin access required" });
   }

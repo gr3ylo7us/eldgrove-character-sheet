@@ -9,6 +9,7 @@ import { STAT_LABELS, getWoundscaleThreshold } from "@/lib/formulas";
 import { useGames } from "@/hooks/use-games";
 import { CreateGameDialog } from "@/components/CreateGameDialog";
 import { JoinGameDialog } from "@/components/JoinGameDialog";
+import { UpgradeAccountDialog } from "@/components/UpgradeAccountDialog";
 
 export default function Home() {
   const { data: characters, isLoading } = useCharacters();
@@ -52,6 +53,7 @@ export default function Home() {
                 {displayName}
               </span>
             </div>
+            {!isGM && <UpgradeAccountDialog />}
             <Link href="/compendium">
               <Button variant="outline" data-testid="link-compendium">
                 <Scroll className="w-4 h-4 mr-2" /> Compendium
